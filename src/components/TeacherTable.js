@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getTeachers, createTeacher, getSubjects, getSchools, deleteTeacher } from '../services/api';
+import { getTeachers, createTeacher, getSubjects, getSchools, deleteTeacher, updateTeacher } from '../services/api';
 import {
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Typography, Button, TextField, Box,
   MenuItem, Select, InputLabel, FormControl, Dialog, DialogActions, DialogContent, DialogTitle, List, ListItem, ListItemText, Checkbox
@@ -10,8 +10,10 @@ const TeacherTable = () => {
   const [subjects, setSubjects] = useState([]);
   const [schools, setSchools] = useState([]);
   const [showCreateTeacherForm, setShowCreateTeacherForm] = useState(false);
+  const [showEditTeacherForm, setShowEditTeacherForm] = useState(false);
   const [showSubjectDialog, setShowSubjectDialog] = useState(false);
   const [selectedSubjects, setSelectedSubjects] = useState([]);
+  const [selectedTeacher, setSelectedTeacher] = useState(null);
   const [newTeacher, setNewTeacher] = useState({
     first_name: '',
     last_name: '',
@@ -46,6 +48,37 @@ const TeacherTable = () => {
       }
     } catch (error) {
       console.error('Error creating teacher:', error);
+    }
+  };
+
+  const handleEditTeacher = (teacher) => {
+    setSelectedTeacher(teacher);
+    setNewTeacher({
+      first_name: teacher.first_name,
+      last_name: teacher.last_name,
+      middle_name: teacher.middle_name,
+      subjects: teacher.subjects.map(subject => subject.id),
+      school: { id: teacher.school.id }
+    });
+    setShowEditTeacherForm(true);
+  };
+
+  const handleUpdateTeacher = async () => {
+    try {
+      const updatedTeacher = {
+        id: selectedTeacher.id,
+        first_name: newTeacher.first_name,
+        last_name: newTeacher.last_name,
+        middle_name: newTeacher.middle_name,
+        subjects: newTeacher.subjects.map(subjectId => ({ id: subjectId })),
+        school: { id: newTeacher.school.id }
+      };
+      await updateTeacher(selectedTeacher.id, updatedTeacher);
+      getTeachers().then(response => setTeachers(response.data)); // Refresh the teacher list
+      setShowEditTeacherForm(false);
+      setSelectedTeacher(null);
+    } catch (error) {
+      console.error('Error updating teacher:', error);
     }
   };
 
@@ -128,8 +161,16 @@ const TeacherTable = () => {
                     variant="contained"
                     color="secondary"
                     onClick={() => handleDeleteTeacher(teacher.id)}
+                    style={{ marginRight: '10px' }}
                   >
                     Delete
+                  </Button>
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={() => handleEditTeacher(teacher)}
+                  >
+                    Edit
                   </Button>
                 </TableCell>
               </TableRow>
@@ -206,6 +247,71 @@ const TeacherTable = () => {
           </Box>
         </Box>
       )}
+
+      <Dialog open={showEditTeacherForm} onClose={() => setShowEditTeacherForm(false)}>
+        <DialogTitle>Edit Teacher</DialogTitle>
+        <DialogContent>
+          <TextField
+            label="First Name"
+            value={newTeacher.first_name}
+            onChange={(e) => setNewTeacher({ ...newTeacher, first_name: e.target.value })}
+            fullWidth
+            margin="normal"
+          />
+          <TextField
+            label="Last Name"
+            value={newTeacher.last_name}
+            onChange={(e) => setNewTeacher({ ...newTeacher, last_name: e.target.value })}
+            fullWidth
+            margin="normal"
+          />
+          <TextField
+            label="Middle Name"
+            value={newTeacher.middle_name}
+            onChange={(e) => setNewTeacher({ ...newTeacher, middle_name: e.target.value })}
+            fullWidth
+            margin="normal"
+          />
+          <Button variant="outlined" onClick={handleSubjectDialogOpen}>
+            Select Subjects
+          </Button>
+          <FormControl fullWidth margin="normal">
+            <InputLabel id="schoolId-label">School</InputLabel>
+            <Select
+              labelId="schoolId-label"
+              value={newTeacher.school.id}
+              onChange={(e) => setNewTeacher({ ...newTeacher, school: { id: e.target.value } })}
+            >
+              {schools.map((school) => (
+                <MenuItem key={school.id} value={school.id}>
+                  {school.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          {selectedSubjects.length > 0 && (
+            <Box mt={2}>
+              <Typography variant="subtitle1">Selected Subjects:</Typography>
+              <ul>
+                {selectedSubjects.map((subjectId) => {
+                  const subject = subjects.find(subject => subject.id === subjectId);
+                  return (
+                    <li key={subjectId}>{subject ? subject.name : 'Unknown Subject'}</li>
+                  );
+                })}
+              </ul>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowEditTeacherForm(false)} color="secondary">
+            Cancel
+          </Button>
+          <Button onClick={handleUpdateTeacher} color="primary">
+            Save Changes
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <Dialog open={showSubjectDialog} onClose={handleSubjectDialogClose}>
         <DialogTitle>Select Subjects</DialogTitle>
