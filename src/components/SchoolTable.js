@@ -29,9 +29,9 @@ const SchoolTable = () => {
   const handleCreateSchool = async () => {
     try {
       await createSchool(newSchool);
-      fetchSchools(); // Refresh the school list
+      fetchSchools();
       setShowCreateForm(false);
-      setNewSchool({ name: '', address: '' }); // Reset the form fields
+      setNewSchool({ name: '', address: '' }); 
     } catch (error) {
       console.error('Error creating school:', error);
     }
@@ -45,7 +45,7 @@ const SchoolTable = () => {
   const confirmDeleteSchool = async () => {
     try {
       await deleteSchool(selectedSchoolId);
-      fetchSchools(); // Refresh the school list after deletion
+      fetchSchools();
       setConfirmOpen(false);
       setSelectedSchoolId(null);
     } catch (error) {
@@ -56,8 +56,8 @@ const SchoolTable = () => {
   const handleEditSchool = async () => {
     try {
       await updateSchool(editSchoolData.id, editSchoolData);
-      fetchSchools(); // Refresh the school list
-      setShowEditModal(false); // Close the modal after saving
+      fetchSchools();
+      setShowEditModal(false);
     } catch (error) {
       console.error('Error updating school:', error);
     }

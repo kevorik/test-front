@@ -42,9 +42,9 @@ const TeacherTable = () => {
       });
 
       if (response.status === 201) {
-        getTeachers().then(response => setTeachers(response.data)); // Refresh the teacher list
+        getTeachers().then(response => setTeachers(response.data));
         setShowCreateTeacherForm(false);
-        setNewTeacher({ first_name: '', last_name: '', middle_name: '', subjects: [], school: { id: '' } }); // Reset the form fields
+        setNewTeacher({ first_name: '', last_name: '', middle_name: '', subjects: [], school: { id: '' } }); 
       }
     } catch (error) {
       console.error('Error creating teacher:', error);
