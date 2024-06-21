@@ -31,48 +31,57 @@ import {
     DialogContentText,
     DialogTitle,
 } from '@mui/material'
+import PaginationComponent from './PaginationComponent'
 
 const ClassTable = () => {
-    const [classes, setClasses] = useState([])
-    const [teachers, setTeachers] = useState([])
-    const [students, setStudents] = useState([])
-    const [schools, setSchools] = useState([])
-    const [showCreateForm, setShowCreateForm] = useState(false)
-    const [showEditModal, setShowEditModal] = useState(false)
+    const [classes, setClasses] = useState([]) // Состояние для хранения списка классов
+    const [teachers, setTeachers] = useState([]) // Состояние для хранения списка учителей
+    const [students, setStudents] = useState([]) // Состояние для хранения списка студентов
+    const [schools, setSchools] = useState([]) // Состояние для хранения списка школ
+    const [showCreateForm, setShowCreateForm] = useState(false) // Состояние для отображения формы создания
+    const [showEditModal, setShowEditModal] = useState(false) // Состояние для отображения модального окна редактирования
     const [editClassData, setEditClassData] = useState({
         id: '',
         name: '',
         school: { id: '' },
         classTeacher: { id: '' },
         classPrefect: { id: '' },
-    })
+    }) // Состояние для хранения данных редактируемого класса
 
     const [newClass, setNewClass] = useState({
         name: '',
         school: { id: '' },
         classTeacher: { id: '' },
         classPrefect: { id: '' },
-    })
+    }) // Состояние для хранения данных нового класса
 
-    const [confirmOpen, setConfirmOpen] = useState(false)
-    const [selectedClassId, setSelectedClassId] = useState(null)
+    const [confirmOpen, setConfirmOpen] = useState(false) // Состояние для отображения подтверждения удаления
+    const [selectedClassId, setSelectedClassId] = useState(null) // Состояние для хранения ID выбранного для удаления класса
+
+    // Состояние пагинации
+    const [page, setPage] = useState(1) // Текущая страница
+    const [limit] = useState(5) // Лимит записей на страницу
+    const [total, setTotal] = useState(0) // Общее количество записей
 
     useEffect(() => {
-        fetchClasses()
+        fetchClasses(page, limit)
         fetchTeachers()
         fetchStudents()
         fetchSchools()
-    }, [])
+    }, [page, limit]) // Загрузка данных при изменении страницы или лимита
 
+    // Функция для получения списка классов
     const fetchClasses = async () => {
         try {
-            const response = await getClasses()
-            setClasses(response.data)
+            const response = await getClasses(page, limit)
+            setClasses(response.data || [])
+            setTotal(response.data || 0)
         } catch (error) {
             console.error('Error fetching classes:', error)
         }
     }
 
+    // Функция для получения списка учителей
     const fetchTeachers = async () => {
         try {
             const response = await getTeachers()
@@ -82,6 +91,7 @@ const ClassTable = () => {
         }
     }
 
+    // Функция для получения списка студентов
     const fetchStudents = async () => {
         try {
             const response = await getStudents()
@@ -91,6 +101,7 @@ const ClassTable = () => {
         }
     }
 
+    // Функция для получения списка школ
     const fetchSchools = async () => {
         try {
             const response = await getSchools()
@@ -98,14 +109,15 @@ const ClassTable = () => {
             setSchools(schools || [])
         } catch (error) {
             console.error('Error fetching schools:', error)
-            setSchools([]) // Если произошла ошибка, установите пустой массив
+            setSchools([]) // Устанавливаем пустой массив в случае ошибки
         }
     }
 
+    // Функция для создания нового класса
     const handleCreateClass = async () => {
         try {
             await createClass(newClass)
-            fetchClasses()
+            fetchClasses(page, limit)
             setShowCreateForm(false)
             setNewClass({
                 name: '',
@@ -118,6 +130,7 @@ const ClassTable = () => {
         }
     }
 
+    // Функция для удаления класса
     const handleDeleteClass = (classId) => {
         setSelectedClassId(classId)
         setConfirmOpen(true)
@@ -126,7 +139,7 @@ const ClassTable = () => {
     const confirmDeleteClass = async () => {
         try {
             await deleteClass(selectedClassId)
-            fetchClasses()
+            fetchClasses(page, limit)
             setConfirmOpen(false)
             setSelectedClassId(null)
         } catch (error) {
@@ -134,16 +147,18 @@ const ClassTable = () => {
         }
     }
 
+    // Функция для обновления данных класса
     const handleEditClass = async () => {
         try {
             await updateClass(editClassData.id, editClassData)
-            fetchClasses()
+            fetchClasses(page, limit)
             setShowEditModal(false)
         } catch (error) {
             console.error('Error updating class:', error)
         }
     }
 
+    // Функция для обработки изменения полей формы
     const handleChange = (event) => {
         const { name, value } = event.target
         let updatedValue = value
@@ -175,6 +190,7 @@ const ClassTable = () => {
         })
     }
 
+    // Открытие модального окна редактирования класса
     const openEditModal = (classItem) => {
         setEditClassData({
             id: classItem.id,
@@ -190,6 +206,11 @@ const ClassTable = () => {
             },
         })
         setShowEditModal(true)
+    }
+
+    // Обработка изменения страницы пагинации
+    const handleChangePage = (event, value) => {
+        setPage(value)
     }
 
     return (
@@ -211,65 +232,75 @@ const ClassTable = () => {
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {classes.map((classItem) => (
-                            <TableRow key={classItem.id}>
-                                <TableCell>{classItem.id}</TableCell>
-                                <TableCell>{classItem.name}</TableCell>
-                                <TableCell>
-                                    {classItem.school
-                                        ? classItem.school.name
-                                        : 'N/A'}
-                                </TableCell>
-                                <TableCell>
-                                    {classItem.classTeacher
-                                        ? `${classItem.classTeacher.first_name} ${classItem.classTeacher.last_name}`
-                                        : 'N/A'}
-                                </TableCell>
-                                <TableCell>
-                                    {classItem.classPrefect
-                                        ? `${classItem.classPrefect.first_name} ${classItem.classPrefect.last_name}`
-                                        : 'N/A'}
-                                </TableCell>
-                                <TableCell>
-                                    {classItem.students &&
-                                    classItem.students.length > 0 ? (
-                                        <ul>
-                                            {classItem.students.map(
-                                                (student) => (
-                                                    <li
-                                                        key={student.id}
-                                                    >{`${student.first_name} ${student.last_name}`}</li>
-                                                )
-                                            )}
-                                        </ul>
-                                    ) : (
-                                        'N/A'
-                                    )}
-                                </TableCell>
-                                <TableCell>
-                                    <Button
-                                        variant="contained"
-                                        color="secondary"
-                                        onClick={() =>
-                                            handleDeleteClass(classItem.id)
-                                        }
-                                        style={{ marginRight: '10px' }}
-                                    >
-                                        Delete
-                                    </Button>
-                                    <Button
-                                        variant="contained"
-                                        color="primary"
-                                        onClick={() => openEditModal(classItem)}
-                                    >
-                                        Edit
-                                    </Button>
-                                </TableCell>
-                            </TableRow>
-                        ))}
+                        {Array.isArray(classes) &&
+                            classes.map((classItem) => (
+                                <TableRow key={classItem.id}>
+                                    <TableCell>{classItem.id}</TableCell>
+                                    <TableCell>{classItem.name}</TableCell>
+                                    <TableCell>
+                                        {classItem.school
+                                            ? classItem.school.name
+                                            : 'N/A'}
+                                    </TableCell>
+                                    <TableCell>
+                                        {classItem.classTeacher
+                                            ? `${classItem.classTeacher.first_name} ${classItem.classTeacher.last_name}`
+                                            : 'N/A'}
+                                    </TableCell>
+                                    <TableCell>
+                                        {classItem.classPrefect
+                                            ? `${classItem.classPrefect.first_name} ${classItem.classPrefect.last_name}`
+                                            : 'N/A'}
+                                    </TableCell>
+                                    <TableCell>
+                                        {classItem.students &&
+                                        classItem.students.length > 0 ? (
+                                            <ul>
+                                                {classItem.students.map(
+                                                    (student) => (
+                                                        <li
+                                                            key={student.id}
+                                                        >{`${student.first_name} ${student.last_name}`}</li>
+                                                    )
+                                                )}
+                                            </ul>
+                                        ) : (
+                                            'N/A'
+                                        )}
+                                    </TableCell>
+                                    <TableCell>
+                                        <Button
+                                            variant="contained"
+                                            color="secondary"
+                                            onClick={() =>
+                                                handleDeleteClass(classItem.id)
+                                            }
+                                            style={{ marginRight: '10px' }}
+                                        >
+                                            Delete
+                                        </Button>
+                                        <Button
+                                            variant="contained"
+                                            color="primary"
+                                            onClick={() =>
+                                                openEditModal(classItem)
+                                            }
+                                        >
+                                            Edit
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
                     </TableBody>
                 </Table>
             </TableContainer>
+            <PaginationComponent
+                totalItems={total}
+                itemsPerPage={limit}
+                currentPage={page}
+                onPageChange={handleChangePage}
+            />
+            {/* Create Class form */}
             <Box mt={2}>
                 <Button
                     variant="contained"
@@ -320,6 +351,7 @@ const ClassTable = () => {
                         </InputLabel>
                         <Select
                             labelId="classTeacherId-label"
+                            label="Class Teacher"
                             value={newClass.classTeacher.id}
                             onChange={(e) =>
                                 setNewClass({
@@ -328,11 +360,15 @@ const ClassTable = () => {
                                 })
                             }
                         >
-                            {teachers.map((teacher) => (
-                                <MenuItem key={teacher.id} value={teacher.id}>
-                                    {teacher.first_name} {teacher.last_name}
-                                </MenuItem>
-                            ))}
+                            {Array.isArray(teachers.teachers) &&
+                                teachers.teachers.map((teacher) => (
+                                    <MenuItem
+                                        key={teacher.id}
+                                        value={teacher.id}
+                                    >
+                                        {teacher.first_name} {teacher.last_name}
+                                    </MenuItem>
+                                ))}
                         </Select>
                     </FormControl>
                     <FormControl fullWidth margin="normal">
@@ -375,6 +411,7 @@ const ClassTable = () => {
                     </Box>
                 </Box>
             )}
+            {/* Edit Class modal */}
             <Modal open={showEditModal} onClose={() => setShowEditModal(false)}>
                 <Box
                     sx={{
@@ -427,11 +464,15 @@ const ClassTable = () => {
                             value={editClassData.classTeacher.id}
                             onChange={handleChange}
                         >
-                            {teachers.map((teacher) => (
-                                <MenuItem key={teacher.id} value={teacher.id}>
-                                    {`${teacher.first_name} ${teacher.last_name}`}
-                                </MenuItem>
-                            ))}
+                            {Array.isArray(teachers.teachers) &&
+                                teachers.teachers.map((teacher) => (
+                                    <MenuItem
+                                        key={teacher.id}
+                                        value={teacher.id}
+                                    >
+                                        {`${teacher.first_name} ${teacher.last_name}`}
+                                    </MenuItem>
+                                ))}
                         </Select>
                     </FormControl>
                     <FormControl fullWidth margin="normal">
@@ -467,6 +508,7 @@ const ClassTable = () => {
                     </Box>
                 </Box>
             </Modal>
+            {/* Delete confirmation dialog */}
             <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)}>
                 <DialogTitle>Confirm Deletion</DialogTitle>
                 <DialogContent>

@@ -22,31 +22,44 @@ import {
     DialogContent,
     DialogTitle,
 } from '@mui/material'
+import PaginationComponent from './PaginationComponent'
 
 const SubjectTable = () => {
-    const [subjects, setSubjects] = useState([])
-    const [showCreateForm, setShowCreateForm] = useState(false)
-    const [showEditForm, setShowEditForm] = useState(false)
-    const [newSubject, setNewSubject] = useState({ name: '' })
-    const [selectedSubject, setSelectedSubject] = useState(null)
-    const [error, setError] = useState('')
-    const [confirmOpen, setConfirmOpen] = useState(false)
-    const [selectedSubjectId, setSelectedSubjectId] = useState(null)
+    const [subjects, setSubjects] = useState([]) // Состояние для хранения списка предметов
+    const [showCreateForm, setShowCreateForm] = useState(false) // Состояние для отображения формы создания предмета
+    const [showEditForm, setShowEditForm] = useState(false) // Состояние для отображения формы редактирования предмета
+    const [newSubject, setNewSubject] = useState({ name: '' }) // Состояние для хранения данных нового предмета
+    const [selectedSubject, setSelectedSubject] = useState(null) // Состояние для хранения выбранного для редактирования предмета
+    const [error, setError] = useState('') // Состояние для хранения сообщений об ошибках
+    const [confirmOpen, setConfirmOpen] = useState(false) // Состояние для отображения подтверждения удаления
+    const [selectedSubjectId, setSelectedSubjectId] = useState(null) // Состояние для хранения ID выбранного для удаления предмета
+    const [total, setTotal] = useState(0) // Общее количество записей
+    const [page, setPage] = useState(1) // Текущая страница пагинации
+    const [limit] = useState(10) // Лимит записей на страницу
 
     useEffect(() => {
-        fetchSubjects()
-    }, [])
+        fetchSubjects(page, limit) // Загрузка предметов при изменении страницы или лимита
+    }, [page])
 
+    // Функция для получения списка предметов
     const fetchSubjects = async () => {
         try {
-            const response = await getSubjects()
-            setSubjects(response.data)
+            const response = await getSubjects(page, limit)
+            const { subjects, total } = response.data
+            setSubjects(subjects || [])
+            setTotal(total || 0)
         } catch (error) {
             console.error('Error fetching subjects:', error)
         }
     }
 
+    // Функция для создания нового предмета
     const handleCreateSubject = async () => {
+        if (!validateName(newSubject.name)) {
+            setError('Subject name should not contain numbers.')
+            return
+        }
+
         if (subjects.some((subject) => subject.name === newSubject.name)) {
             setError('Subject with this name already exists.')
             return
@@ -54,7 +67,7 @@ const SubjectTable = () => {
 
         try {
             await createSubject(newSubject)
-            fetchSubjects()
+            fetchSubjects(page, limit)
             setShowCreateForm(false)
             setNewSubject({ name: '' })
             setError('')
@@ -64,12 +77,19 @@ const SubjectTable = () => {
         }
     }
 
+    // Функция для редактирования предмета
     const handleEditSubject = (subject) => {
         setSelectedSubject(subject)
         setShowEditForm(true)
     }
 
+    // Функция для обновления данных предмета
     const handleUpdateSubject = async () => {
+        if (!validateName(selectedSubject.name)) {
+            setError('Subject name should not contain numbers.')
+            return
+        }
+
         if (
             subjects.some(
                 (subject) =>
@@ -93,6 +113,7 @@ const SubjectTable = () => {
         }
     }
 
+    // Функция для удаления предмета
     const handleDeleteSubject = (subjectId) => {
         setSelectedSubjectId(subjectId)
         setConfirmOpen(true)
@@ -110,6 +131,39 @@ const SubjectTable = () => {
             setSelectedSubjectId(null)
         } catch (error) {
             console.error('Error deleting subject:', error)
+        }
+    }
+
+    // Обработка изменения страницы пагинации
+    const handleChangePage = (event, value) => {
+        setPage(value)
+    }
+
+    // Валидация имени предмета (не должно содержать цифр)
+    const validateName = (name) => {
+        const regex = /^\D*$/
+        return regex.test(name)
+    }
+
+    // Обработка изменения полей формы создания предмета
+    const handleInputChange = (e) => {
+        const { value } = e.target
+        if (validateName(value)) {
+            setNewSubject({ ...newSubject, name: value })
+            setError('')
+        } else {
+            setError('Subject name should not contain numbers.')
+        }
+    }
+
+    // Обработка изменения полей формы редактирования предмета
+    const handleEditInputChange = (e) => {
+        const { value } = e.target
+        if (validateName(value)) {
+            setSelectedSubject({ ...selectedSubject, name: value })
+            setError('')
+        } else {
+            setError('Subject name should not contain numbers.')
         }
     }
 
@@ -158,6 +212,12 @@ const SubjectTable = () => {
                     </TableBody>
                 </Table>
             </TableContainer>
+            <PaginationComponent
+                totalItems={total}
+                itemsPerPage={limit}
+                currentPage={page}
+                onPageChange={handleChangePage}
+            />
             <Box mt={2}>
                 <Button
                     variant="contained"
@@ -175,12 +235,7 @@ const SubjectTable = () => {
                     <TextField
                         label="Name"
                         value={newSubject.name}
-                        onChange={(e) =>
-                            setNewSubject({
-                                ...newSubject,
-                                name: e.target.value,
-                            })
-                        }
+                        onChange={handleInputChange}
                         fullWidth
                         margin="normal"
                         required={true}
@@ -218,12 +273,7 @@ const SubjectTable = () => {
                         <TextField
                             label="Name"
                             value={selectedSubject.name}
-                            onChange={(e) =>
-                                setSelectedSubject({
-                                    ...selectedSubject,
-                                    name: e.target.value,
-                                })
-                            }
+                            onChange={handleEditInputChange}
                             fullWidth
                             margin="normal"
                             required={true}

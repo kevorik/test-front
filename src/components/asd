@@ -1,5 +1,553 @@
 import React, { useEffect, useState } from 'react'
 import {
+    getClasses,
+    createClass,
+    getTeachers,
+    getStudents,
+    getSchools,
+    deleteClass,
+    updateClass,
+} from '../services/api'
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    Paper,
+    Typography,
+    Button,
+    TextField,
+    Box,
+    MenuItem,
+    Select,
+    InputLabel,
+    FormControl,
+    Modal,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogContentText,
+    DialogTitle,
+} from '@mui/material'
+import PaginationComponent from './PaginationComponent'
+
+const ClassTable = () => {
+    const [classes, setClasses] = useState([])
+    const [teachers, setTeachers] = useState([])
+    const [students, setStudents] = useState([])
+    const [schools, setSchools] = useState([])
+    const [showCreateForm, setShowCreateForm] = useState(false)
+    const [showEditModal, setShowEditModal] = useState(false)
+    const [editClassData, setEditClassData] = useState({
+        id: '',
+        name: '',
+        school: { id: '' },
+        classTeacher: { id: '' },
+        classPrefect: { id: '' },
+    })
+
+    const [newClass, setNewClass] = useState({
+        name: '',
+        school: { id: '' },
+        classTeacher: { id: '' },
+        classPrefect: { id: '' },
+    })
+
+    const [confirmOpen, setConfirmOpen] = useState(false)
+    const [selectedClassId, setSelectedClassId] = useState(null)
+
+    // Pagination state
+    const [page, setPage] = useState(1)
+    const [limit] = useState(5)
+    const [total, setTotal] = useState(0)
+
+    useEffect(() => {
+        fetchClasses(page, limit)
+        fetchTeachers()
+        fetchStudents()
+        fetchSchools()
+    }, [page, limit])
+
+    const fetchClasses = async () => {
+        try {
+            const response = await getClasses(page, limit)
+            setClasses(response.data || [])
+            setTotal(response.data || 0)
+        } catch (error) {
+            console.error('Error fetching classes:', error)
+        }
+    }
+
+    const fetchTeachers = async () => {
+        try {
+            const response = await getTeachers()
+            setTeachers(response.data)
+        } catch (error) {
+            console.error('Error fetching teachers:', error)
+        }
+    }
+
+    const fetchStudents = async () => {
+        try {
+            const response = await getStudents()
+            setStudents(response.data)
+        } catch (error) {
+            console.error('Error fetching students:', error)
+        }
+    }
+
+    const fetchSchools = async () => {
+        try {
+            const response = await getSchools()
+            const { schools } = response.data
+            setSchools(schools || [])
+        } catch (error) {
+            console.error('Error fetching schools:', error)
+            setSchools([]) // Если произошла ошибка, установите пустой массив
+        }
+    }
+
+    const handleCreateClass = async () => {
+        try {
+            await createClass(newClass)
+            fetchClasses(page, limit)
+            setShowCreateForm(false)
+            setNewClass({
+                name: '',
+                school: { id: '' },
+                classTeacher: { id: '' },
+                classPrefect: { id: '' },
+            })
+        } catch (error) {
+            console.error('Error creating class:', error)
+        }
+    }
+
+    const handleDeleteClass = (classId) => {
+        setSelectedClassId(classId)
+        setConfirmOpen(true)
+    }
+
+    const confirmDeleteClass = async () => {
+        try {
+            await deleteClass(selectedClassId)
+            fetchClasses(page, limit)
+            setConfirmOpen(false)
+            setSelectedClassId(null)
+        } catch (error) {
+            console.error('Error deleting class:', error)
+        }
+    }
+
+    const handleEditClass = async () => {
+        try {
+            await updateClass(editClassData.id, editClassData)
+            fetchClasses(page, limit)
+            setShowEditModal(false)
+        } catch (error) {
+            console.error('Error updating class:', error)
+        }
+    }
+
+    const handleChange = (event) => {
+        const { name, value } = event.target
+        let updatedValue = value
+
+        if (name === 'school') {
+            const selectedSchool = schools.find((school) => school.id === value)
+            updatedValue = { id: selectedSchool.id, name: selectedSchool.name }
+        } else if (name === 'classTeacher') {
+            const selectedTeacher = teachers.find(
+                (teacher) => teacher.id === value
+            )
+            updatedValue = {
+                id: selectedTeacher.id,
+                name: `${selectedTeacher.first_name} ${selectedTeacher.last_name}`,
+            }
+        } else if (name === 'classPrefect') {
+            const selectedPrefect = students.find(
+                (student) => student.id === value
+            )
+            updatedValue = {
+                id: selectedPrefect.id,
+                name: `${selectedPrefect.first_name} ${selectedPrefect.last_name}`,
+            }
+        }
+
+        setEditClassData({
+            ...editClassData,
+            [name]: updatedValue,
+        })
+    }
+
+    const openEditModal = (classItem) => {
+        setEditClassData({
+            id: classItem.id,
+            name: classItem.name,
+            school: { id: classItem.school.id, name: classItem.school.name },
+            classTeacher: {
+                id: classItem.classTeacher.id,
+                name: `${classItem.classTeacher.first_name} ${classItem.classTeacher.last_name}`,
+            },
+            classPrefect: {
+                id: classItem.classPrefect.id,
+                name: `${classItem.classPrefect.first_name} ${classItem.classPrefect.last_name}`,
+            },
+        })
+        setShowEditModal(true)
+    }
+
+    const handleChangePage = (event, value) => {
+        setPage(value)
+    }
+
+    return (
+        <div>
+            <Typography variant="h4" gutterBottom>
+                Classes
+            </Typography>
+            <TableContainer component={Paper}>
+                <Table>
+                    <TableHead>
+                        <TableRow>
+                            <TableCell>ID</TableCell>
+                            <TableCell>Name</TableCell>
+                            <TableCell>School ID</TableCell>
+                            <TableCell>Class Teacher ID</TableCell>
+                            <TableCell>Class Prefect ID</TableCell>
+                            <TableCell>Students</TableCell>
+                            <TableCell>Actions</TableCell>
+                        </TableRow>
+                    </TableHead>
+                    <TableBody>
+                        {Array.isArray(classes) &&
+                            classes.map((classItem) => (
+                                <TableRow key={classItem.id}>
+                                    <TableCell>{classItem.id}</TableCell>
+                                    <TableCell>{classItem.name}</TableCell>
+                                    <TableCell>
+                                        {classItem.school
+                                            ? classItem.school.name
+                                            : 'N/A'}
+                                    </TableCell>
+                                    <TableCell>
+                                        {classItem.classTeacher
+                                            ? `${classItem.classTeacher.first_name} ${classItem.classTeacher.last_name}`
+                                            : 'N/A'}
+                                    </TableCell>
+                                    <TableCell>
+                                        {classItem.classPrefect
+                                            ? `${classItem.classPrefect.first_name} ${classItem.classPrefect.last_name}`
+                                            : 'N/A'}
+                                    </TableCell>
+                                    <TableCell>
+                                        {classItem.students &&
+                                        classItem.students.length > 0 ? (
+                                            <ul>
+                                                {classItem.students.map(
+                                                    (student) => (
+                                                        <li
+                                                            key={student.id}
+                                                        >{`${student.first_name} ${student.last_name}`}</li>
+                                                    )
+                                                )}
+                                            </ul>
+                                        ) : (
+                                            'N/A'
+                                        )}
+                                    </TableCell>
+                                    <TableCell>
+                                        <Button
+                                            variant="contained"
+                                            color="secondary"
+                                            onClick={() =>
+                                                handleDeleteClass(classItem.id)
+                                            }
+                                            style={{ marginRight: '10px' }}
+                                        >
+                                            Delete
+                                        </Button>
+                                        <Button
+                                            variant="contained"
+                                            color="primary"
+                                            onClick={() =>
+                                                openEditModal(classItem)
+                                            }
+                                        >
+                                            Edit
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                    </TableBody>
+                </Table>
+            </TableContainer>
+            <PaginationComponent
+                totalItems={total}
+                itemsPerPage={limit}
+                currentPage={page}
+                onPageChange={handleChangePage}
+            />
+            {/* Create Class form */}
+            <Box mt={2}>
+                <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={() => setShowCreateForm(true)}
+                >
+                    Create Class
+                </Button>
+            </Box>
+            {showCreateForm && (
+                <Box mt={2}>
+                    <Typography variant="h6" gutterBottom>
+                        Create New Class
+                    </Typography>
+                    <TextField
+                        label="Name"
+                        value={newClass.name}
+                        onChange={(e) =>
+                            setNewClass({ ...newClass, name: e.target.value })
+                        }
+                        fullWidth
+                        margin="normal"
+                        required={true}
+                        inputProps={{ maxLength: 10 }}
+                    />
+                    <FormControl fullWidth margin="normal">
+                        <InputLabel id="schoolId-label">School</InputLabel>
+                        <Select
+                            labelId="schoolId-label"
+                            value={newClass.school.id}
+                            onChange={(e) =>
+                                setNewClass({
+                                    ...newClass,
+                                    school: { id: e.target.value },
+                                })
+                            }
+                        >
+                            {schools.map((school) => (
+                                <MenuItem key={school.id} value={school.id}>
+                                    {school.name}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
+                    <FormControl fullWidth margin="normal">
+                        <InputLabel id="classTeacherId-label">
+                            Class Teacher
+                        </InputLabel>
+                        <Select
+                            labelId="classTeacherId-label"
+                            value={newClass.classTeacher.id}
+                            onChange={(e) =>
+                                setNewClass({
+                                    ...newClass,
+                                    classTeacher: { id: e.target.value },
+                                })
+                            }
+                        >
+                            {Array.isArray(teachers) &&
+                                teachers.map((teacher) => (
+                                    <MenuItem
+                                        key={teacher.id}
+                                        value={teacher.id}
+                                    >
+                                        {teacher.first_name} {teacher.last_name}
+                                    </MenuItem>
+                                ))}
+                        </Select>
+                    </FormControl>
+                    <FormControl fullWidth margin="normal">
+                        <InputLabel id="classPrefectId-label">
+                            Class Prefect
+                        </InputLabel>
+                        <Select
+                            labelId="classPrefectId-label"
+                            value={newClass.classPrefect.id}
+                            onChange={(e) =>
+                                setNewClass({
+                                    ...newClass,
+                                    classPrefect: { id: e.target.value },
+                                })
+                            }
+                        >
+                            {students.map((student) => (
+                                <MenuItem key={student.id} value={student.id}>
+                                    {student.first_name} {student.last_name}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
+                    <Box mt={2}>
+                        <Button
+                            variant="contained"
+                            color="primary"
+                            onClick={handleCreateClass}
+                        >
+                            Save
+                        </Button>
+                        <Button
+                            variant="contained"
+                            color="secondary"
+                            onClick={() => setShowCreateForm(false)}
+                            style={{ marginLeft: '10px' }}
+                        >
+                            Cancel
+                        </Button>
+                    </Box>
+                </Box>
+            )}
+            {/* Edit Class modal */}
+            <Modal open={showEditModal} onClose={() => setShowEditModal(false)}>
+                <Box
+                    sx={{
+                        position: 'absolute',
+                        top: '50%',
+                        left: '50%',
+                        transform: 'translate(-50%, -50%)',
+                        width: 400,
+                        bgcolor: 'background.paper',
+                        boxShadow: 24,
+                        p: 4,
+                    }}
+                >
+                    <Typography variant="h6" gutterBottom>
+                        Edit Class
+                    </Typography>
+                    <TextField
+                        label="Name"
+                        name="name"
+                        value={editClassData.name}
+                        onChange={(e) =>
+                            setEditClassData({
+                                ...editClassData,
+                                name: e.target.value,
+                            })
+                        }
+                        fullWidth
+                        margin="normal"
+                        required={true}
+                        inputProps={{ maxLength: 10 }}
+                    />
+                    <FormControl fullWidth margin="normal">
+                        <InputLabel>School ID</InputLabel>
+                        <Select
+                            name="school"
+                            value={editClassData.school.id}
+                            onChange={handleChange}
+                        >
+                            {schools.map((school) => (
+                                <MenuItem key={school.id} value={school.id}>
+                                    {school.name}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
+                    <FormControl fullWidth margin="normal">
+                        <InputLabel>Class Teacher ID</InputLabel>
+                        <Select
+                            name="classTeacher"
+                            value={editClassData.classTeacher.id}
+                            onChange={handleChange}
+                        >
+                            {Array.isArray(teachers) &&
+                                teachers.map((teacher) => (
+                                    <MenuItem
+                                        key={teacher.id}
+                                        value={teacher.id}
+                                    >
+                                        {`${teacher.first_name} ${teacher.last_name}`}
+                                    </MenuItem>
+                                ))}
+                        </Select>
+                    </FormControl>
+                    <FormControl fullWidth margin="normal">
+                        <InputLabel>Class Prefect ID</InputLabel>
+                        <Select
+                            name="classPrefect"
+                            value={editClassData.classPrefect.id}
+                            onChange={handleChange}
+                        >
+                            {students.map((student) => (
+                                <MenuItem key={student.id} value={student.id}>
+                                    {`${student.first_name} ${student.last_name}`}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
+                    <Box mt={2}>
+                        <Button
+                            variant="contained"
+                            color="primary"
+                            onClick={handleEditClass}
+                        >
+                            Save
+                        </Button>
+                        <Button
+                            variant="contained"
+                            color="secondary"
+                            onClick={() => setShowEditModal(false)}
+                            style={{ marginLeft: '10px' }}
+                        >
+                            Cancel
+                        </Button>
+                    </Box>
+                </Box>
+            </Modal>
+            {/* Delete confirmation dialog */}
+            <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)}>
+                <DialogTitle>Confirm Deletion</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        Are you sure you want to delete this class?
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button
+                        onClick={() => setConfirmOpen(false)}
+                        color="primary"
+                    >
+                        Cancel
+                    </Button>
+                    <Button onClick={confirmDeleteClass} color="secondary">
+                        Delete
+                    </Button>
+                </DialogActions>
+            </Dialog>
+        </div>
+    )
+}
+
+export default ClassTable
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+import React, { useEffect, useState } from 'react'
+import {
     getTeachers,
     createTeacher,
     getSubjects,
@@ -31,7 +579,10 @@ import {
     ListItem,
     ListItemText,
     Checkbox,
+    TableSortLabel,
 } from '@mui/material'
+import PaginationComponent from './PaginationComponent'
+
 const TeacherTable = () => {
     const [teachers, setTeachers] = useState([])
     const [subjects, setSubjects] = useState([])
@@ -56,21 +607,35 @@ const TeacherTable = () => {
         school: { id: '' },
     })
 
+    const [sortColumn, setSortColumn] = useState(null)
+    const [sortDirection, setSortDirection] = useState('asc')
+
+    const [total, setTotal] = useState(0)
+    const [page, setPage] = useState(1)
+    const [limit] = useState(10)
     const [confirmOpen, setConfirmOpen] = useState(false)
     const [selectedTeacherId, setSelectedTeacherId] = useState(null)
 
     useEffect(() => {
-        // Загрузка данных о преподавателях, предметах и школах
-        getTeachers().then((response) =>
-            setTeachers(Array.isArray(response.data) ? response.data : [])
-        )
+        loadTeachers(page, limit)
         getSubjects().then((response) =>
             setSubjects(Array.isArray(response.data) ? response.data : [])
         )
         getSchools().then((response) =>
             setSchools(Array.isArray(response.data) ? response.data : [])
         )
-    }, [])
+    }, [page, limit])
+
+    const loadTeachers = (page, limit) => {
+        getTeachers(page, limit).then((response) => {
+            setTeachers(
+                Array.isArray(response.data.teachers)
+                    ? response.data.teachers
+                    : []
+            )
+            setTotal(response.data.total)
+        })
+    }
 
     const handleCreateTeacher = async () => {
         try {
@@ -85,11 +650,7 @@ const TeacherTable = () => {
             })
 
             if (response.status === 201) {
-                getTeachers().then((response) =>
-                    setTeachers(
-                        Array.isArray(response.data) ? response.data : []
-                    )
-                )
+                loadTeachers(page, limit)
                 setShowCreateTeacherForm(false)
                 setNewTeacher({
                     first_name: '',
@@ -130,9 +691,7 @@ const TeacherTable = () => {
                 school: { id: editTeacher.school.id },
             }
             await updateTeacher(editTeacher.id, updatedTeacher)
-            getTeachers().then((response) =>
-                setTeachers(Array.isArray(response.data) ? response.data : [])
-            )
+            loadTeachers(page, limit)
             setShowEditTeacherForm(false)
             setEditTeacher({
                 id: '',
@@ -189,16 +748,60 @@ const TeacherTable = () => {
     const confirmDeleteTeacher = async () => {
         try {
             await deleteTeacher(selectedTeacherId)
-            setTeachers((prevTeachers) =>
-                prevTeachers.filter(
-                    (teacher) => teacher.id !== selectedTeacherId
-                )
-            )
+            loadTeachers(page, limit)
             setConfirmOpen(false)
             setSelectedTeacherId(null)
         } catch (error) {
             console.error('Error deleting teacher:', error)
         }
+    }
+
+    const handlePageChange = (event, value) => {
+        setPage(value)
+    }
+
+    const validateName = (name) => {
+        const regex = /^[^\d]*$/
+        return regex.test(name)
+    }
+
+    const handleInputChange = (e, field) => {
+        const { value } = e.target
+        if (validateName(value)) {
+            setNewTeacher({ ...newTeacher, [field]: value })
+        }
+    }
+
+    const handleEditInputChange = (e, field) => {
+        const { value } = e.target
+        if (validateName(value)) {
+            setEditTeacher({ ...editTeacher, [field]: value })
+        }
+    }
+
+    const sortTeachers = (column) => {
+        const isAsc = sortColumn === column && sortDirection === 'asc'
+        const sortedTeachers = [...teachers].sort((a, b) => {
+            if (
+                column === 'first_name' ||
+                column === 'last_name' ||
+                column === 'middle_name'
+            ) {
+                const valueA = a[column].toUpperCase()
+                const valueB = b[column].toUpperCase()
+                return (
+                    (valueA < valueB ? -1 : valueA > valueB ? 1 : 0) *
+                    (isAsc ? 1 : -1)
+                )
+            } else if (column === 'id') {
+                return (a[column] - b[column]) * (isAsc ? 1 : -1)
+            }
+            return 0
+        })
+
+        setTeachers(sortedTeachers)
+        setSortColumn(column)
+        setSortDirection(isAsc ? 'desc' : 'asc')
     }
 
     return (
@@ -211,63 +814,102 @@ const TeacherTable = () => {
                     <TableHead>
                         <TableRow>
                             <TableCell>ID</TableCell>
-                            <TableCell>First Name</TableCell>
-                            <TableCell>Last Name</TableCell>
-                            <TableCell>Middle Name</TableCell>
+                            <TableCell>
+                                <TableSortLabel
+                                    active={sortColumn === 'first_name'}
+                                    direction={
+                                        sortColumn === 'first_name'
+                                            ? sortDirection
+                                            : 'asc'
+                                    }
+                                    onClick={() => sortTeachers('first_name')}
+                                >
+                                    First Name
+                                </TableSortLabel>
+                            </TableCell>
+                            <TableCell>
+                                <TableSortLabel
+                                    active={sortColumn === 'last_name'}
+                                    direction={
+                                        sortColumn === 'last_name'
+                                            ? sortDirection
+                                            : 'asc'
+                                    }
+                                    onClick={() => sortTeachers('last_name')}
+                                >
+                                    Last Name
+                                </TableSortLabel>
+                            </TableCell>
+                            <TableCell>
+                                <TableSortLabel
+                                    active={sortColumn === 'middle_name'}
+                                    direction={
+                                        sortColumn === 'middle_name'
+                                            ? sortDirection
+                                            : 'asc'
+                                    }
+                                    onClick={() => sortTeachers('middle_name')}
+                                >
+                                    Middle Name
+                                </TableSortLabel>
+                            </TableCell>
                             <TableCell>Subjects</TableCell>
                             <TableCell>School</TableCell>
                             <TableCell>Action</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {teachers.map((teacher) => (
-                            <TableRow key={teacher.id}>
-                                <TableCell>{teacher.id}</TableCell>
-                                <TableCell>{teacher.first_name}</TableCell>
-                                <TableCell>{teacher.last_name}</TableCell>
-                                <TableCell>{teacher.middle_name}</TableCell>
-                                <TableCell>
-                                    {teacher.subjects &&
-                                    teacher.subjects.length > 0 ? (
-                                        <ul>
-                                            {teacher.subjects.map((subject) => (
-                                                <li key={subject.id}>
-                                                    {subject.name}
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    ) : (
-                                        'N/A'
-                                    )}
-                                </TableCell>
-                                <TableCell>
-                                    {teacher.school
-                                        ? teacher.school.name
-                                        : 'N/A'}
-                                </TableCell>
-                                <TableCell>
-                                    <Button
-                                        variant="contained"
-                                        color="secondary"
-                                        onClick={() =>
-                                            handleDeleteTeacher(teacher.id)
-                                        }
-                                        style={{ marginRight: '10px' }}
-                                    >
-                                        Delete
-                                    </Button>
-                                    <Button
-                                        variant="contained"
-                                        color="primary"
-                                        onClick={() =>
-                                            handleEditTeacher(teacher)
-                                        }
-                                    >
-                                        Edit
-                                    </Button>
-                                </TableCell>
-                            </TableRow>
-                        ))}
+                        {Array.isArray(teachers) &&
+                            teachers.map((teacher) => (
+                                <TableRow key={teacher.id}>
+                                    <TableCell>{teacher.id}</TableCell>
+                                    <TableCell>{teacher.first_name}</TableCell>
+                                    <TableCell>{teacher.last_name}</TableCell>
+                                    <TableCell>{teacher.middle_name}</TableCell>
+                                    <TableCell>
+                                        {teacher.subjects &&
+                                        teacher.subjects.length > 0 ? (
+                                            <ul>
+                                                {teacher.subjects.map(
+                                                    (subject) => (
+                                                        <li key={subject.id}>
+                                                            {subject.name}
+                                                        </li>
+                                                    )
+                                                )}
+                                            </ul>
+                                        ) : (
+                                            'N/A'
+                                        )}
+                                    </TableCell>
+                                    <TableCell>
+                                        {teacher.school
+                                            ? teacher.school.name
+                                            : 'N/A'}
+                                    </TableCell>
+                                    <TableCell>
+                                        <Button
+                                            variant="contained"
+                                            color="secondary"
+                                            onClick={() =>
+                                                handleDeleteTeacher(teacher.id)
+                                            }
+                                            style={{ marginRight: '10px' }}
+                                        >
+                                            Delete
+                                        </Button>
+                                        <Button
+                                            variant="contained"
+                                            color="primary"
+                                            onClick={() =>
+                                                handleEditTeacher(teacher)
+                                            }
+                                        >
+                                            Edit
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
                     </TableBody>
                 </Table>
             </TableContainer>
@@ -280,6 +922,12 @@ const TeacherTable = () => {
                     Create Teacher
                 </Button>
             </Box>
+            <PaginationComponent
+                totalItems={total}
+                itemsPerPage={limit}
+                currentPage={page}
+                onPageChange={handlePageChange}
+            />
             {showCreateTeacherForm && (
                 <Box mt={2}>
                     <Typography variant="h6" gutterBottom>
@@ -288,12 +936,7 @@ const TeacherTable = () => {
                     <TextField
                         label="First Name"
                         value={newTeacher.first_name}
-                        onChange={(e) =>
-                            setNewTeacher({
-                                ...newTeacher,
-                                first_name: e.target.value,
-                            })
-                        }
+                        onChange={(e) => handleInputChange(e, 'first_name')}
                         fullWidth
                         margin="normal"
                         required={true}
@@ -302,12 +945,7 @@ const TeacherTable = () => {
                     <TextField
                         label="Last Name"
                         value={newTeacher.last_name}
-                        onChange={(e) =>
-                            setNewTeacher({
-                                ...newTeacher,
-                                last_name: e.target.value,
-                            })
-                        }
+                        onChange={(e) => handleInputChange(e, 'last_name')}
                         fullWidth
                         margin="normal"
                         required={true}
@@ -316,12 +954,7 @@ const TeacherTable = () => {
                     <TextField
                         label="Middle Name"
                         value={newTeacher.middle_name}
-                        onChange={(e) =>
-                            setNewTeacher({
-                                ...newTeacher,
-                                middle_name: e.target.value,
-                            })
-                        }
+                        onChange={(e) => handleInputChange(e, 'middle_name')}
                         fullWidth
                         margin="normal"
                         inputProps={{ maxLength: 20 }}
@@ -401,12 +1034,7 @@ const TeacherTable = () => {
                     <TextField
                         label="First Name"
                         value={editTeacher.first_name}
-                        onChange={(e) =>
-                            setEditTeacher({
-                                ...editTeacher,
-                                first_name: e.target.value,
-                            })
-                        }
+                        onChange={(e) => handleEditInputChange(e, 'first_name')}
                         fullWidth
                         margin="normal"
                         inputProps={{ maxLength: 20 }}
@@ -414,12 +1042,7 @@ const TeacherTable = () => {
                     <TextField
                         label="Last Name"
                         value={editTeacher.last_name}
-                        onChange={(e) =>
-                            setEditTeacher({
-                                ...editTeacher,
-                                last_name: e.target.value,
-                            })
-                        }
+                        onChange={(e) => handleEditInputChange(e, 'last_name')}
                         fullWidth
                         margin="normal"
                         inputProps={{ maxLength: 20 }}
@@ -428,10 +1051,7 @@ const TeacherTable = () => {
                         label="Middle Name"
                         value={editTeacher.middle_name}
                         onChange={(e) =>
-                            setEditTeacher({
-                                ...editTeacher,
-                                middle_name: e.target.value,
-                            })
+                            handleEditInputChange(e, 'middle_name')
                         }
                         fullWidth
                         margin="normal"
@@ -496,7 +1116,6 @@ const TeacherTable = () => {
                     </Button>
                 </DialogActions>
             </Dialog>
-
             <Dialog open={showSubjectDialog} onClose={handleSubjectDialogClose}>
                 <DialogTitle>Select Subjects</DialogTitle>
                 <DialogContent>
@@ -504,7 +1123,6 @@ const TeacherTable = () => {
                         {subjects.map((subject) => (
                             <ListItem
                                 key={subject.id}
-                                button
                                 onClick={() => handleSubjectToggle(subject.id)}
                             >
                                 <Checkbox
@@ -532,7 +1150,6 @@ const TeacherTable = () => {
                     </Button>
                 </DialogActions>
             </Dialog>
-
             <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)}>
                 <DialogTitle>Confirm Delete</DialogTitle>
                 <DialogContent>

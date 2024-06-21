@@ -26,29 +26,60 @@ import {
     DialogActions,
     DialogContent,
     DialogTitle,
+    TableSortLabel,
 } from '@mui/material'
+import PaginationComponent from './PaginationComponent'
 
 const StudentTable = () => {
-    const [students, setStudents] = useState([])
-    const [classes, setClasses] = useState([])
-    const [showCreateStudentForm, setShowCreateStudentForm] = useState(false)
-    const [showEditStudentForm, setShowEditStudentForm] = useState(false)
+    const [students, setStudents] = useState([]) // Состояние для хранения списка студентов
+    const [classes, setClasses] = useState([]) // Состояние для хранения списка классов
+    const [showCreateStudentForm, setShowCreateStudentForm] = useState(false) // Состояние для отображения формы создания студента
+    const [showEditStudentForm, setShowEditStudentForm] = useState(false) // Состояние для отображения формы редактирования студента
     const [newStudent, setNewStudent] = useState({
         first_name: '',
         last_name: '',
         middle_name: '',
         class: { id: '' },
-    })
-    const [selectedStudent, setSelectedStudent] = useState(null)
+    }) // Состояние для хранения данных нового студента
+    const [selectedStudent, setSelectedStudent] = useState(null) // Состояние для хранения выбранного для редактирования студента
 
-    const [confirmOpen, setConfirmOpen] = useState(false)
-    const [selectedStudentId, setSelectedStudentId] = useState(null)
+    const [confirmOpen, setConfirmOpen] = useState(false) // Состояние для отображения подтверждения удаления
+    const [selectedStudentId, setSelectedStudentId] = useState(null) // Состояние для хранения ID выбранного для удаления студента
+
+    const [sortColumn, setSortColumn] = useState(null) // Состояние для хранения текущего столбца сортировки
+    const [sortDirection, setSortDirection] = useState('asc') // Состояние для хранения направления сортировки
+
+    const [page, setPage] = useState(1) // Состояние для текущей страницы пагинации
+    const [limit] = useState(5) // Лимит записей на страницу
+    const [total, setTotal] = useState(0) // Общее количество записей
 
     useEffect(() => {
-        getStudents().then((response) => setStudents(response.data))
-        getClasses().then((response) => setClasses(response.data))
-    }, [])
+        fetchStudents(page, limit) // Загрузка студентов при изменении страницы или лимита
+        fetchClasses(page, limit) // Загрузка классов при изменении страницы или лимита
+    }, [page])
 
+    // Функция для получения списка студентов
+    const fetchStudents = async (page, limit) => {
+        try {
+            const response = await getStudents(page, limit)
+            setStudents(response.data || [])
+            setTotal(response.data || 0)
+        } catch (error) {
+            console.error('Error fetching students:', error)
+        }
+    }
+
+    // Функция для получения списка классов
+    const fetchClasses = async () => {
+        try {
+            const response = await getClasses()
+            setClasses(response.data)
+        } catch (error) {
+            console.error('Error fetching classes:', error)
+        }
+    }
+
+    // Функция для создания нового студента
     const handleCreateStudent = async () => {
         try {
             const response = await createStudent({
@@ -59,7 +90,7 @@ const StudentTable = () => {
             })
 
             if (response.status === 201) {
-                getStudents().then((response) => setStudents(response.data))
+                fetchStudents()
                 setShowCreateStudentForm(false)
                 setNewStudent({
                     first_name: '',
@@ -73,15 +104,17 @@ const StudentTable = () => {
         }
     }
 
+    // Функция для редактирования студента
     const handleEditStudent = (student) => {
         setSelectedStudent(student)
         setShowEditStudentForm(true)
     }
 
+    // Функция для обновления данных студента
     const handleUpdateStudent = async () => {
         try {
             await updateStudent(selectedStudent.id, selectedStudent)
-            getStudents().then((response) => setStudents(response.data)) // Refresh the student list
+            fetchStudents()
             setShowEditStudentForm(false)
             setSelectedStudent(null)
         } catch (error) {
@@ -89,6 +122,7 @@ const StudentTable = () => {
         }
     }
 
+    // Функция для удаления студента
     const handleDeleteStudent = (studentId) => {
         setSelectedStudentId(studentId)
         setConfirmOpen(true)
@@ -109,6 +143,59 @@ const StudentTable = () => {
         }
     }
 
+    // Функция для сортировки списка студентов
+    const sortStudents = (column) => {
+        const isAsc = sortColumn === column && sortDirection === 'asc'
+        const sortedStudents = [...students].sort((a, b) => {
+            if (
+                column === 'first_name' ||
+                column === 'last_name' ||
+                column === 'middle_name'
+            ) {
+                const valueA = a[column].toUpperCase()
+                const valueB = b[column].toUpperCase()
+                return (
+                    (valueA < valueB ? -1 : valueA > valueB ? 1 : 0) *
+                    (isAsc ? 1 : -1)
+                )
+            } else if (column === 'id') {
+                return (a[column] - b[column]) * (isAsc ? 1 : -1)
+            }
+            return 0
+        })
+
+        setStudents(sortedStudents)
+        setSortColumn(column)
+        setSortDirection(isAsc ? 'desc' : 'asc')
+    }
+
+    // Обработка изменения страницы пагинации
+    const handleChangePage = (event, value) => {
+        setPage(value)
+    }
+
+    // Валидация имени (не должно содержать цифр)
+    const validateName = (name) => {
+        const regex = /^[^\d]*$/
+        return regex.test(name)
+    }
+
+    // Обработка изменения полей формы создания студента
+    const handleInputChange = (e, field) => {
+        const { value } = e.target
+        if (validateName(value)) {
+            setNewStudent({ ...newStudent, [field]: value })
+        }
+    }
+
+    // Обработка изменения полей формы редактирования студента
+    const handleEditInputChange = (e, field) => {
+        const { value } = e.target
+        if (validateName(value)) {
+            setSelectedStudent({ ...selectedStudent, [field]: value })
+        }
+    }
+
     return (
         <div>
             <Typography variant="h4" gutterBottom>
@@ -119,9 +206,45 @@ const StudentTable = () => {
                     <TableHead>
                         <TableRow>
                             <TableCell>ID</TableCell>
-                            <TableCell>First Name</TableCell>
-                            <TableCell>Last Name</TableCell>
-                            <TableCell>Middle Name</TableCell>
+                            <TableCell>
+                                <TableSortLabel
+                                    active={sortColumn === 'first_name'}
+                                    direction={
+                                        sortColumn === 'first_name'
+                                            ? sortDirection
+                                            : 'asc'
+                                    }
+                                    onClick={() => sortStudents('first_name')}
+                                >
+                                    First Name
+                                </TableSortLabel>
+                            </TableCell>
+                            <TableCell>
+                                <TableSortLabel
+                                    active={sortColumn === 'last_name'}
+                                    direction={
+                                        sortColumn === 'last_name'
+                                            ? sortDirection
+                                            : 'asc'
+                                    }
+                                    onClick={() => sortStudents('last_name')}
+                                >
+                                    Last Name
+                                </TableSortLabel>
+                            </TableCell>
+                            <TableCell>
+                                <TableSortLabel
+                                    active={sortColumn === 'middle_name'}
+                                    direction={
+                                        sortColumn === 'middle_name'
+                                            ? sortDirection
+                                            : 'asc'
+                                    }
+                                    onClick={() => sortStudents('middle_name')}
+                                >
+                                    Middle Name
+                                </TableSortLabel>
+                            </TableCell>
                             <TableCell>Class</TableCell>
                             <TableCell>Action</TableCell>
                         </TableRow>
@@ -162,6 +285,14 @@ const StudentTable = () => {
                     </TableBody>
                 </Table>
             </TableContainer>
+
+            <PaginationComponent
+                totalItems={total}
+                itemsPerPage={limit}
+                currentPage={page}
+                onPageChange={handleChangePage}
+            />
+
             <Box mt={2}>
                 <Button
                     variant="contained"
@@ -179,12 +310,7 @@ const StudentTable = () => {
                     <TextField
                         label="First Name"
                         value={newStudent.first_name}
-                        onChange={(e) =>
-                            setNewStudent({
-                                ...newStudent,
-                                first_name: e.target.value,
-                            })
-                        }
+                        onChange={(e) => handleInputChange(e, 'first_name')}
                         fullWidth
                         margin="normal"
                         required={true}
@@ -193,12 +319,7 @@ const StudentTable = () => {
                     <TextField
                         label="Last Name"
                         value={newStudent.last_name}
-                        onChange={(e) =>
-                            setNewStudent({
-                                ...newStudent,
-                                last_name: e.target.value,
-                            })
-                        }
+                        onChange={(e) => handleInputChange(e, 'last_name')}
                         fullWidth
                         margin="normal"
                         required={true}
@@ -207,12 +328,7 @@ const StudentTable = () => {
                     <TextField
                         label="Middle Name"
                         value={newStudent.middle_name}
-                        onChange={(e) =>
-                            setNewStudent({
-                                ...newStudent,
-                                middle_name: e.target.value,
-                            })
-                        }
+                        onChange={(e) => handleInputChange(e, 'middle_name')}
                         fullWidth
                         margin="normal"
                         inputProps={{ maxLength: 20 }}
@@ -270,10 +386,7 @@ const StudentTable = () => {
                             label="First Name"
                             value={selectedStudent.first_name}
                             onChange={(e) =>
-                                setSelectedStudent({
-                                    ...selectedStudent,
-                                    first_name: e.target.value,
-                                })
+                                handleEditInputChange(e, 'first_name')
                             }
                             fullWidth
                             margin="normal"
@@ -284,10 +397,7 @@ const StudentTable = () => {
                             label="Last Name"
                             value={selectedStudent.last_name}
                             onChange={(e) =>
-                                setSelectedStudent({
-                                    ...selectedStudent,
-                                    last_name: e.target.value,
-                                })
+                                handleEditInputChange(e, 'last_name')
                             }
                             fullWidth
                             margin="normal"
@@ -298,10 +408,7 @@ const StudentTable = () => {
                             label="Middle Name"
                             value={selectedStudent.middle_name}
                             onChange={(e) =>
-                                setSelectedStudent({
-                                    ...selectedStudent,
-                                    middle_name: e.target.value,
-                                })
+                                handleEditInputChange(e, 'middle_name')
                             }
                             fullWidth
                             margin="normal"
@@ -368,4 +475,5 @@ const StudentTable = () => {
         </div>
     )
 }
+
 export default StudentTable

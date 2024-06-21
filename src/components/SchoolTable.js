@@ -23,15 +23,18 @@ import {
     DialogContent,
     DialogContentText,
     DialogTitle,
-    Pagination,
+    TableSortLabel,
 } from '@mui/material'
+import PaginationComponent from './PaginationComponent'
 
 const SchoolTable = () => {
+    // Состояния для хранения списка школ, общей суммы, текущей страницы и лимита на страницу
     const [schools, setSchools] = useState([])
     const [total, setTotal] = useState(0)
     const [page, setPage] = useState(1)
     const [limit] = useState(10)
 
+    // Состояния для управления отображением форм и модальных окон
     const [showCreateForm, setShowCreateForm] = useState(false)
     const [showEditModal, setShowEditModal] = useState(false)
     const [editSchoolData, setEditSchoolData] = useState({
@@ -40,15 +43,23 @@ const SchoolTable = () => {
         address: '',
     })
 
+    // Состояния для управления сортировкой
+    const [sortColumn, setSortColumn] = useState(null)
+    const [sortDirection, setSortDirection] = useState('asc')
+
+    // Состояние для хранения данных новой школы
     const [newSchool, setNewSchool] = useState({ name: '', address: '' })
 
+    // Состояния для подтверждения удаления
     const [confirmOpen, setConfirmOpen] = useState(false)
     const [selectedSchoolId, setSelectedSchoolId] = useState(null)
 
+    // Загружаем список школ при изменении страницы
     useEffect(() => {
         fetchSchools(page, limit)
     }, [page])
 
+    // Функция для получения списка школ
     const fetchSchools = async (page, limit) => {
         try {
             const response = await getSchools(page, limit)
@@ -60,6 +71,7 @@ const SchoolTable = () => {
         }
     }
 
+    // Функция для создания новой школы
     const handleCreateSchool = async () => {
         try {
             await createSchool(newSchool)
@@ -71,11 +83,13 @@ const SchoolTable = () => {
         }
     }
 
+    // Устанавливаем ID школы для удаления и открываем окно подтверждения
     const handleDeleteSchool = (schoolId) => {
         setSelectedSchoolId(schoolId)
         setConfirmOpen(true)
     }
 
+    // Функция для подтверждения удаления школы
     const confirmDeleteSchool = async () => {
         try {
             await deleteSchool(selectedSchoolId)
@@ -87,6 +101,7 @@ const SchoolTable = () => {
         }
     }
 
+    // Функция для редактирования данных школы
     const handleEditSchool = async () => {
         try {
             await updateSchool(editSchoolData.id, editSchoolData)
@@ -97,6 +112,7 @@ const SchoolTable = () => {
         }
     }
 
+    // Открываем модальное окно редактирования и устанавливаем данные выбранной школы
     const openEditModal = (school) => {
         setEditSchoolData({
             id: school.id,
@@ -106,8 +122,31 @@ const SchoolTable = () => {
         setShowEditModal(true)
     }
 
+    // Обработка изменения страницы
     const handleChangePage = (event, value) => {
         setPage(value)
+    }
+
+    // Функция для сортировки списка школ
+    const sortSchools = (column) => {
+        const isAsc = sortColumn === column && sortDirection === 'asc'
+        const sortedSchools = [...schools].sort((a, b) => {
+            if (column === 'name' || column === 'address') {
+                const valueA = a[column].toUpperCase()
+                const valueB = b[column].toUpperCase()
+                return (
+                    (valueA < valueB ? -1 : valueA > valueB ? 1 : 0) *
+                    (isAsc ? 1 : -1)
+                )
+            } else if (column === 'id') {
+                return (a[column] - b[column]) * (isAsc ? 1 : -1)
+            }
+            return 0
+        })
+
+        setSchools(sortedSchools)
+        setSortColumn(column)
+        setSortDirection(isAsc ? 'desc' : 'asc')
     }
 
     return (
@@ -120,8 +159,32 @@ const SchoolTable = () => {
                     <TableHead>
                         <TableRow>
                             <TableCell>ID</TableCell>
-                            <TableCell>Name</TableCell>
-                            <TableCell>Address</TableCell>
+                            <TableCell>
+                                <TableSortLabel
+                                    active={sortColumn === 'name'}
+                                    direction={
+                                        sortColumn === 'name'
+                                            ? sortDirection
+                                            : 'asc'
+                                    }
+                                    onClick={() => sortSchools('name')}
+                                >
+                                    Name
+                                </TableSortLabel>
+                            </TableCell>
+                            <TableCell>
+                                <TableSortLabel
+                                    active={sortColumn === 'address'}
+                                    direction={
+                                        sortColumn === 'address'
+                                            ? sortDirection
+                                            : 'asc'
+                                    }
+                                    onClick={() => sortSchools('address')}
+                                >
+                                    Address
+                                </TableSortLabel>
+                            </TableCell>
                             <TableCell>Actions</TableCell>
                         </TableRow>
                     </TableHead>
@@ -158,13 +221,12 @@ const SchoolTable = () => {
                     </TableBody>
                 </Table>
             </TableContainer>
-            <Box mt={2}>
-                <Pagination
-                    count={Math.ceil(total / limit)}
-                    page={page}
-                    onChange={handleChangePage}
-                />
-            </Box>
+            <PaginationComponent
+                totalItems={total}
+                itemsPerPage={limit}
+                currentPage={page}
+                onPageChange={handleChangePage}
+            />
             <Box mt={2}>
                 <Button
                     variant="contained"

@@ -9,10 +9,27 @@ export const getSchools = (page, limit) => {
     })
 }
 
-export const getTeachers = () => axios.get(`${API_URL}/teachers`)
-export const getStudents = () => axios.get(`${API_URL}/students`)
-export const getClasses = () => axios.get(`${API_URL}/classes`)
-export const getSubjects = () => axios.get(`${API_URL}/subjects`)
+export const getTeachers = (page, limit) => {
+    return axios.get(`${API_URL}/teachers`, {
+        params: { page, limit },
+    })
+}
+export const getStudents = (page, limit) => {
+    return axios.get(`${API_URL}/students`, {
+        params: { page, limit },
+    })
+}
+export const getClasses = (page, limit) => {
+    return axios.get(`${API_URL}/classes`, {
+        params: { page, limit },
+    })
+}
+
+export const getSubjects = (page, limit) => {
+    return axios.get(`${API_URL}/subjects`, {
+        params: { page, limit },
+    })
+}
 
 //POST
 export const createSchool = (school) => axios.post(`${API_URL}/schools`, school)
