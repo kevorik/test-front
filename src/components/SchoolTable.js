@@ -28,13 +28,11 @@ import {
 import PaginationComponent from './PaginationComponent'
 
 const SchoolTable = () => {
-    // Состояния для хранения списка школ, общей суммы, текущей страницы и лимита на страницу
     const [schools, setSchools] = useState([])
     const [total, setTotal] = useState(0)
     const [page, setPage] = useState(1)
     const [limit] = useState(10)
 
-    // Состояния для управления отображением форм и модальных окон
     const [showCreateForm, setShowCreateForm] = useState(false)
     const [showEditModal, setShowEditModal] = useState(false)
     const [editSchoolData, setEditSchoolData] = useState({
@@ -43,23 +41,27 @@ const SchoolTable = () => {
         address: '',
     })
 
-    // Состояния для управления сортировкой
     const [sortColumn, setSortColumn] = useState(null)
     const [sortDirection, setSortDirection] = useState('asc')
 
-    // Состояние для хранения данных новой школы
     const [newSchool, setNewSchool] = useState({ name: '', address: '' })
+    const [newSchoolErrors, setNewSchoolErrors] = useState({
+        name: '',
+        address: '',
+    })
 
-    // Состояния для подтверждения удаления
+    const [editSchoolErrors, setEditSchoolErrors] = useState({
+        name: '',
+        address: '',
+    })
+
     const [confirmOpen, setConfirmOpen] = useState(false)
     const [selectedSchoolId, setSelectedSchoolId] = useState(null)
 
-    // Загружаем список школ при изменении страницы
     useEffect(() => {
         fetchSchools(page, limit)
     }, [page])
 
-    // Функция для получения списка школ
     const fetchSchools = async (page, limit) => {
         try {
             const response = await getSchools(page, limit)
@@ -71,8 +73,15 @@ const SchoolTable = () => {
         }
     }
 
-    // Функция для создания новой школы
     const handleCreateSchool = async () => {
+        const errors = {}
+        if (newSchool.name.trim() === '') errors.name = 'Name is required'
+        if (newSchool.address.trim() === '')
+            errors.address = 'Address is required'
+        setNewSchoolErrors(errors)
+
+        if (Object.keys(errors).length > 0) return
+
         try {
             await createSchool(newSchool)
             fetchSchools(page, limit)
@@ -83,13 +92,11 @@ const SchoolTable = () => {
         }
     }
 
-    // Устанавливаем ID школы для удаления и открываем окно подтверждения
     const handleDeleteSchool = (schoolId) => {
         setSelectedSchoolId(schoolId)
         setConfirmOpen(true)
     }
 
-    // Функция для подтверждения удаления школы
     const confirmDeleteSchool = async () => {
         try {
             await deleteSchool(selectedSchoolId)
@@ -101,8 +108,15 @@ const SchoolTable = () => {
         }
     }
 
-    // Функция для редактирования данных школы
     const handleEditSchool = async () => {
+        const errors = {}
+        if (editSchoolData.name.trim() === '') errors.name = 'Name is required'
+        if (editSchoolData.address.trim() === '')
+            errors.address = 'Address is required'
+        setEditSchoolErrors(errors)
+
+        if (Object.keys(errors).length > 0) return
+
         try {
             await updateSchool(editSchoolData.id, editSchoolData)
             fetchSchools(page, limit)
@@ -112,7 +126,6 @@ const SchoolTable = () => {
         }
     }
 
-    // Открываем модальное окно редактирования и устанавливаем данные выбранной школы
     const openEditModal = (school) => {
         setEditSchoolData({
             id: school.id,
@@ -122,12 +135,10 @@ const SchoolTable = () => {
         setShowEditModal(true)
     }
 
-    // Обработка изменения страницы
     const handleChangePage = (event, value) => {
         setPage(value)
     }
 
-    // Функция для сортировки списка школ
     const sortSchools = (column) => {
         const isAsc = sortColumn === column && sortDirection === 'asc'
         const sortedSchools = [...schools].sort((a, b) => {
@@ -147,6 +158,20 @@ const SchoolTable = () => {
         setSchools(sortedSchools)
         setSortColumn(column)
         setSortDirection(isAsc ? 'desc' : 'asc')
+    }
+
+    const handleNewSchoolChange = (e, field) => {
+        setNewSchool({ ...newSchool, [field]: e.target.value })
+        if (e.target.value.trim() !== '') {
+            setNewSchoolErrors({ ...newSchoolErrors, [field]: '' })
+        }
+    }
+
+    const handleEditSchoolChange = (e, field) => {
+        setEditSchoolData({ ...editSchoolData, [field]: e.target.value })
+        if (e.target.value.trim() !== '') {
+            setEditSchoolErrors({ ...editSchoolErrors, [field]: '' })
+        }
     }
 
     return (
@@ -244,27 +269,24 @@ const SchoolTable = () => {
                     <TextField
                         label="Name"
                         value={newSchool.name}
-                        onChange={(e) =>
-                            setNewSchool({ ...newSchool, name: e.target.value })
-                        }
+                        onChange={(e) => handleNewSchoolChange(e, 'name')}
                         fullWidth
                         margin="normal"
                         required={true}
                         inputProps={{ maxLength: 20 }}
+                        error={newSchoolErrors.name !== ''}
+                        helperText={newSchoolErrors.name}
                     />
                     <TextField
                         label="Address"
                         value={newSchool.address}
-                        onChange={(e) =>
-                            setNewSchool({
-                                ...newSchool,
-                                address: e.target.value,
-                            })
-                        }
+                        onChange={(e) => handleNewSchoolChange(e, 'address')}
                         fullWidth
                         margin="normal"
                         required={true}
-                        inputProps={{ maxLength: 20 }}
+                        inputProps={{ maxLength: 40 }}
+                        error={newSchoolErrors.address !== ''}
+                        helperText={newSchoolErrors.address}
                     />
                     <Box mt={2}>
                         <Button
@@ -304,28 +326,22 @@ const SchoolTable = () => {
                     <TextField
                         label="Name"
                         value={editSchoolData.name}
-                        onChange={(e) =>
-                            setEditSchoolData({
-                                ...editSchoolData,
-                                name: e.target.value,
-                            })
-                        }
+                        onChange={(e) => handleEditSchoolChange(e, 'name')}
                         fullWidth
                         margin="normal"
                         inputProps={{ maxLength: 20 }}
+                        error={editSchoolErrors.name !== ''}
+                        helperText={editSchoolErrors.name}
                     />
                     <TextField
                         label="Address"
                         value={editSchoolData.address}
-                        onChange={(e) =>
-                            setEditSchoolData({
-                                ...editSchoolData,
-                                address: e.target.value,
-                            })
-                        }
+                        onChange={(e) => handleEditSchoolChange(e, 'address')}
                         fullWidth
                         margin="normal"
                         inputProps={{ maxLength: 40 }}
+                        error={editSchoolErrors.address !== ''}
+                        helperText={editSchoolErrors.address}
                     />
                     <Box mt={2}>
                         <Button

@@ -31,45 +31,49 @@ import {
 import PaginationComponent from './PaginationComponent'
 
 const StudentTable = () => {
-    const [students, setStudents] = useState([]) // Состояние для хранения списка студентов
-    const [classes, setClasses] = useState([]) // Состояние для хранения списка классов
-    const [showCreateStudentForm, setShowCreateStudentForm] = useState(false) // Состояние для отображения формы создания студента
-    const [showEditStudentForm, setShowEditStudentForm] = useState(false) // Состояние для отображения формы редактирования студента
+    const [students, setStudents] = useState([])
+    const [classes, setClasses] = useState([])
+    const [showCreateStudentForm, setShowCreateStudentForm] = useState(false)
+    const [showEditStudentForm, setShowEditStudentForm] = useState(false)
     const [newStudent, setNewStudent] = useState({
         first_name: '',
         last_name: '',
         middle_name: '',
         class: { id: '' },
-    }) // Состояние для хранения данных нового студента
-    const [selectedStudent, setSelectedStudent] = useState(null) // Состояние для хранения выбранного для редактирования студента
-
-    const [confirmOpen, setConfirmOpen] = useState(false) // Состояние для отображения подтверждения удаления
-    const [selectedStudentId, setSelectedStudentId] = useState(null) // Состояние для хранения ID выбранного для удаления студента
-
-    const [sortColumn, setSortColumn] = useState(null) // Состояние для хранения текущего столбца сортировки
-    const [sortDirection, setSortDirection] = useState('asc') // Состояние для хранения направления сортировки
-
-    const [page, setPage] = useState(1) // Состояние для текущей страницы пагинации
-    const [limit] = useState(5) // Лимит записей на страницу
-    const [total, setTotal] = useState(0) // Общее количество записей
+    })
+    const [selectedStudent, setSelectedStudent] = useState(null)
+    const [confirmOpen, setConfirmOpen] = useState(false)
+    const [selectedStudentId, setSelectedStudentId] = useState(null)
+    const [sortColumn, setSortColumn] = useState(null)
+    const [sortDirection, setSortDirection] = useState('asc')
+    const [page, setPage] = useState(1)
+    const [limit] = useState(5)
+    const [total, setTotal] = useState(0)
+    const [newStudentErrors, setNewStudentErrors] = useState({
+        first_name: '',
+        last_name: '',
+    })
+    const [editStudentErrors, setEditStudentErrors] = useState({
+        first_name: '',
+        last_name: '',
+    })
 
     useEffect(() => {
-        fetchStudents(page, limit) // Загрузка студентов при изменении страницы или лимита
-        fetchClasses(page, limit) // Загрузка классов при изменении страницы или лимита
+        fetchStudents(page, limit)
+        fetchClasses()
     }, [page])
 
-    // Функция для получения списка студентов
     const fetchStudents = async (page, limit) => {
         try {
             const response = await getStudents(page, limit)
-            setStudents(response.data || [])
-            setTotal(response.data || 0)
+            const { students, total } = response.data
+            setStudents(students || [])
+            setTotal(total || 0)
         } catch (error) {
             console.error('Error fetching students:', error)
         }
     }
 
-    // Функция для получения списка классов
     const fetchClasses = async () => {
         try {
             const response = await getClasses()
@@ -79,8 +83,22 @@ const StudentTable = () => {
         }
     }
 
-    // Функция для создания нового студента
     const handleCreateStudent = async () => {
+        const errors = {}
+        if (newStudent.first_name.trim() === '') {
+            errors.first_name = 'First Name is required'
+        } else if (!validateName(newStudent.first_name)) {
+            errors.first_name = 'First Name should not contain digits'
+        }
+        if (newStudent.last_name.trim() === '') {
+            errors.last_name = 'Last Name is required'
+        } else if (!validateName(newStudent.last_name)) {
+            errors.last_name = 'Last Name should not contain digits'
+        }
+        setNewStudentErrors(errors)
+
+        if (Object.keys(errors).length > 0) return
+
         try {
             const response = await createStudent({
                 first_name: newStudent.first_name,
@@ -90,7 +108,7 @@ const StudentTable = () => {
             })
 
             if (response.status === 201) {
-                fetchStudents()
+                fetchStudents(page, limit)
                 setShowCreateStudentForm(false)
                 setNewStudent({
                     first_name: '',
@@ -104,17 +122,30 @@ const StudentTable = () => {
         }
     }
 
-    // Функция для редактирования студента
     const handleEditStudent = (student) => {
         setSelectedStudent(student)
         setShowEditStudentForm(true)
     }
 
-    // Функция для обновления данных студента
     const handleUpdateStudent = async () => {
+        const errors = {}
+        if (selectedStudent.first_name.trim() === '') {
+            errors.first_name = 'First Name is required'
+        } else if (!validateName(selectedStudent.first_name)) {
+            errors.first_name = 'First Name should not contain digits'
+        }
+        if (selectedStudent.last_name.trim() === '') {
+            errors.last_name = 'Last Name is required'
+        } else if (!validateName(selectedStudent.last_name)) {
+            errors.last_name = 'Last Name should not contain digits'
+        }
+        setEditStudentErrors(errors)
+
+        if (Object.keys(errors).length > 0) return
+
         try {
             await updateStudent(selectedStudent.id, selectedStudent)
-            fetchStudents()
+            fetchStudents(page, limit)
             setShowEditStudentForm(false)
             setSelectedStudent(null)
         } catch (error) {
@@ -122,7 +153,6 @@ const StudentTable = () => {
         }
     }
 
-    // Функция для удаления студента
     const handleDeleteStudent = (studentId) => {
         setSelectedStudentId(studentId)
         setConfirmOpen(true)
@@ -143,7 +173,6 @@ const StudentTable = () => {
         }
     }
 
-    // Функция для сортировки списка студентов
     const sortStudents = (column) => {
         const isAsc = sortColumn === column && sortDirection === 'asc'
         const sortedStudents = [...students].sort((a, b) => {
@@ -169,30 +198,28 @@ const StudentTable = () => {
         setSortDirection(isAsc ? 'desc' : 'asc')
     }
 
-    // Обработка изменения страницы пагинации
     const handleChangePage = (event, value) => {
         setPage(value)
     }
 
-    // Валидация имени (не должно содержать цифр)
     const validateName = (name) => {
         const regex = /^[^\d]*$/
         return regex.test(name)
     }
 
-    // Обработка изменения полей формы создания студента
     const handleInputChange = (e, field) => {
         const { value } = e.target
-        if (validateName(value)) {
-            setNewStudent({ ...newStudent, [field]: value })
+        setNewStudent({ ...newStudent, [field]: value })
+        if (value.trim() !== '' && validateName(value)) {
+            setNewStudentErrors({ ...newStudentErrors, [field]: '' })
         }
     }
 
-    // Обработка изменения полей формы редактирования студента
     const handleEditInputChange = (e, field) => {
         const { value } = e.target
-        if (validateName(value)) {
-            setSelectedStudent({ ...selectedStudent, [field]: value })
+        setSelectedStudent({ ...selectedStudent, [field]: value })
+        if (value.trim() !== '' && validateName(value)) {
+            setEditStudentErrors({ ...editStudentErrors, [field]: '' })
         }
     }
 
@@ -315,6 +342,8 @@ const StudentTable = () => {
                         margin="normal"
                         required={true}
                         inputProps={{ maxLength: 20 }}
+                        error={Boolean(newStudentErrors.first_name)}
+                        helperText={newStudentErrors.first_name}
                     />
                     <TextField
                         label="Last Name"
@@ -324,6 +353,8 @@ const StudentTable = () => {
                         margin="normal"
                         required={true}
                         inputProps={{ maxLength: 20 }}
+                        error={Boolean(newStudentErrors.last_name)}
+                        helperText={newStudentErrors.last_name}
                     />
                     <TextField
                         label="Middle Name"
@@ -345,14 +376,15 @@ const StudentTable = () => {
                                 })
                             }
                         >
-                            {classes.map((classItem) => (
-                                <MenuItem
-                                    key={classItem.id}
-                                    value={classItem.id}
-                                >
-                                    {classItem.name}
-                                </MenuItem>
-                            ))}
+                            {Array.isArray(classes.classes) &&
+                                classes.classes.map((classItem) => (
+                                    <MenuItem
+                                        key={classItem.id}
+                                        value={classItem.id}
+                                    >
+                                        {classItem.name}
+                                    </MenuItem>
+                                ))}
                         </Select>
                     </FormControl>
                     <Box mt={2}>
@@ -392,6 +424,8 @@ const StudentTable = () => {
                             margin="normal"
                             required={true}
                             inputProps={{ maxLength: 20 }}
+                            error={Boolean(editStudentErrors.first_name)}
+                            helperText={editStudentErrors.first_name}
                         />
                         <TextField
                             label="Last Name"
@@ -403,6 +437,8 @@ const StudentTable = () => {
                             margin="normal"
                             required={true}
                             inputProps={{ maxLength: 20 }}
+                            error={Boolean(editStudentErrors.last_name)}
+                            helperText={editStudentErrors.last_name}
                         />
                         <TextField
                             label="Middle Name"
@@ -428,14 +464,15 @@ const StudentTable = () => {
                                     })
                                 }
                             >
-                                {classes.map((classItem) => (
-                                    <MenuItem
-                                        key={classItem.id}
-                                        value={classItem.id}
-                                    >
-                                        {classItem.name}
-                                    </MenuItem>
-                                ))}
+                                {Array.isArray(classes.classes) &&
+                                    classes.classes.map((classItem) => (
+                                        <MenuItem
+                                            key={classItem.id}
+                                            value={classItem.id}
+                                        >
+                                            {classItem.name}
+                                        </MenuItem>
+                                    ))}
                             </Select>
                         </FormControl>
                     </DialogContent>

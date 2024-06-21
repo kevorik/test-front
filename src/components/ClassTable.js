@@ -55,6 +55,14 @@ const ClassTable = () => {
         classPrefect: { id: '' },
     }) // Состояние для хранения данных нового класса
 
+    const [newClassErrors, setNewClassErrors] = useState({
+        name: '',
+    })
+
+    const [editClassErrors, setEditClassErrors] = useState({
+        name: '',
+    })
+
     const [confirmOpen, setConfirmOpen] = useState(false) // Состояние для отображения подтверждения удаления
     const [selectedClassId, setSelectedClassId] = useState(null) // Состояние для хранения ID выбранного для удаления класса
 
@@ -68,14 +76,15 @@ const ClassTable = () => {
         fetchTeachers()
         fetchStudents()
         fetchSchools()
-    }, [page, limit]) // Загрузка данных при изменении страницы или лимита
+    }, [page]) // Загрузка данных при изменении страницы или лимита
 
     // Функция для получения списка классов
     const fetchClasses = async () => {
         try {
             const response = await getClasses(page, limit)
-            setClasses(response.data || [])
-            setTotal(response.data || 0)
+            const { classes, total } = response.data
+            setClasses(classes || [])
+            setTotal(total || 0)
         } catch (error) {
             console.error('Error fetching classes:', error)
         }
@@ -115,6 +124,11 @@ const ClassTable = () => {
 
     // Функция для создания нового класса
     const handleCreateClass = async () => {
+        const errors = {}
+        if (newClass.name.trim() === '') errors.name = 'Name is required'
+        setNewClassErrors(errors)
+
+        if (Object.keys(errors).length > 0) return
         try {
             await createClass(newClass)
             fetchClasses(page, limit)
@@ -149,6 +163,11 @@ const ClassTable = () => {
 
     // Функция для обновления данных класса
     const handleEditClass = async () => {
+        const errors = {}
+        if (editClassData.name.trim() === '') errors.name = 'Name is required'
+        setEditClassErrors(errors)
+
+        if (Object.keys(errors).length > 0) return
         try {
             await updateClass(editClassData.id, editClassData)
             fetchClasses(page, limit)
@@ -211,6 +230,20 @@ const ClassTable = () => {
     // Обработка изменения страницы пагинации
     const handleChangePage = (event, value) => {
         setPage(value)
+    }
+
+    const handleNewClassChange = (e, field) => {
+        setNewClass({ ...newClass, [field]: e.target.value })
+        if (e.target.value.trim() !== '') {
+            setNewClassErrors({ ...newClassErrors, [field]: '' })
+        }
+    }
+
+    const handleEditClassChange = (e, field) => {
+        setEditClassData({ ...editClassData, [field]: e.target.value })
+        if (e.target.value.trim() !== '') {
+            setEditClassErrors({ ...editClassErrors, [field]: '' })
+        }
     }
 
     return (
@@ -318,13 +351,13 @@ const ClassTable = () => {
                     <TextField
                         label="Name"
                         value={newClass.name}
-                        onChange={(e) =>
-                            setNewClass({ ...newClass, name: e.target.value })
-                        }
+                        onChange={(e) => handleNewClassChange(e, 'name')}
                         fullWidth
                         margin="normal"
                         required={true}
                         inputProps={{ maxLength: 10 }}
+                        error={newClassErrors.name !== ''}
+                        helperText={newClassErrors.name}
                     />
                     <FormControl fullWidth margin="normal">
                         <InputLabel id="schoolId-label">School</InputLabel>
@@ -385,11 +418,15 @@ const ClassTable = () => {
                                 })
                             }
                         >
-                            {students.map((student) => (
-                                <MenuItem key={student.id} value={student.id}>
-                                    {student.first_name} {student.last_name}
-                                </MenuItem>
-                            ))}
+                            {Array.isArray(students.students) &&
+                                students.students.map((student) => (
+                                    <MenuItem
+                                        key={student.id}
+                                        value={student.id}
+                                    >
+                                        {student.first_name} {student.last_name}
+                                    </MenuItem>
+                                ))}
                         </Select>
                     </FormControl>
                     <Box mt={2}>
@@ -432,16 +469,13 @@ const ClassTable = () => {
                         label="Name"
                         name="name"
                         value={editClassData.name}
-                        onChange={(e) =>
-                            setEditClassData({
-                                ...editClassData,
-                                name: e.target.value,
-                            })
-                        }
+                        onChange={(e) => handleEditClassChange(e, 'name')}
                         fullWidth
                         margin="normal"
                         required={true}
                         inputProps={{ maxLength: 10 }}
+                        error={editClassErrors.name !== ''}
+                        helperText={editClassErrors.name}
                     />
                     <FormControl fullWidth margin="normal">
                         <InputLabel>School ID</InputLabel>
@@ -482,11 +516,15 @@ const ClassTable = () => {
                             value={editClassData.classPrefect.id}
                             onChange={handleChange}
                         >
-                            {students.map((student) => (
-                                <MenuItem key={student.id} value={student.id}>
-                                    {`${student.first_name} ${student.last_name}`}
-                                </MenuItem>
-                            ))}
+                            {Array.isArray(students.students) &&
+                                students.students.map((student) => (
+                                    <MenuItem
+                                        key={student.id}
+                                        value={student.id}
+                                    >
+                                        {`${student.first_name} ${student.last_name}`}
+                                    </MenuItem>
+                                ))}
                         </Select>
                     </FormControl>
                     <Box mt={2}>
