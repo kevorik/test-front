@@ -41,7 +41,7 @@ const SchoolTable = () => {
         address: '',
     })
 
-    const [sortColumn, setSortColumn] = useState(null)
+    const [sortColumn, setSortColumn] = useState('id')
     const [sortDirection, setSortDirection] = useState('asc')
 
     const [newSchool, setNewSchool] = useState({ name: '', address: '' })
@@ -59,12 +59,17 @@ const SchoolTable = () => {
     const [selectedSchoolId, setSelectedSchoolId] = useState(null)
 
     useEffect(() => {
-        fetchSchools(page, limit)
-    }, [page])
+        fetchSchools(page, limit, sortColumn, sortDirection)
+    }, [page, limit, sortColumn, sortDirection])
 
-    const fetchSchools = async (page, limit) => {
+    const fetchSchools = async (page, limit, sortColumn, sortDirection) => {
         try {
-            const response = await getSchools(page, limit)
+            const response = await getSchools(
+                page,
+                limit,
+                sortColumn,
+                sortDirection
+            )
             const { schools, total } = response.data
             setSchools(schools || [])
             setTotal(total || 0)
@@ -84,7 +89,7 @@ const SchoolTable = () => {
 
         try {
             await createSchool(newSchool)
-            fetchSchools(page, limit)
+            fetchSchools(page, limit, sortColumn, sortDirection)
             setShowCreateForm(false)
             setNewSchool({ name: '', address: '' })
         } catch (error) {
@@ -100,7 +105,7 @@ const SchoolTable = () => {
     const confirmDeleteSchool = async () => {
         try {
             await deleteSchool(selectedSchoolId)
-            fetchSchools(page, limit)
+            fetchSchools(page, limit, sortColumn, sortDirection)
             setConfirmOpen(false)
             setSelectedSchoolId(null)
         } catch (error) {
@@ -119,7 +124,7 @@ const SchoolTable = () => {
 
         try {
             await updateSchool(editSchoolData.id, editSchoolData)
-            fetchSchools(page, limit)
+            fetchSchools(page, limit, sortColumn, sortDirection)
             setShowEditModal(false)
         } catch (error) {
             console.error('Error updating school:', error)
@@ -139,25 +144,11 @@ const SchoolTable = () => {
         setPage(value)
     }
 
-    const sortSchools = (column) => {
+    // Сортировка учителей
+    const handleSortRequest = (column) => {
         const isAsc = sortColumn === column && sortDirection === 'asc'
-        const sortedSchools = [...schools].sort((a, b) => {
-            if (column === 'name' || column === 'address') {
-                const valueA = a[column].toUpperCase()
-                const valueB = b[column].toUpperCase()
-                return (
-                    (valueA < valueB ? -1 : valueA > valueB ? 1 : 0) *
-                    (isAsc ? 1 : -1)
-                )
-            } else if (column === 'id') {
-                return (a[column] - b[column]) * (isAsc ? 1 : -1)
-            }
-            return 0
-        })
-
-        setSchools(sortedSchools)
-        setSortColumn(column)
         setSortDirection(isAsc ? 'desc' : 'asc')
+        setSortColumn(column)
     }
 
     const handleNewSchoolChange = (e, field) => {
@@ -184,7 +175,13 @@ const SchoolTable = () => {
                     <TableHead>
                         <TableRow>
                             <TableCell>ID</TableCell>
-                            <TableCell>
+                            <TableCell
+                                sortDirection={
+                                    sortColumn === 'name'
+                                        ? sortDirection
+                                        : false
+                                }
+                            >
                                 <TableSortLabel
                                     active={sortColumn === 'name'}
                                     direction={
@@ -192,12 +189,18 @@ const SchoolTable = () => {
                                             ? sortDirection
                                             : 'asc'
                                     }
-                                    onClick={() => sortSchools('name')}
+                                    onClick={() => handleSortRequest('name')}
                                 >
                                     Name
                                 </TableSortLabel>
                             </TableCell>
-                            <TableCell>
+                            <TableCell
+                                sortDirection={
+                                    sortColumn === 'address'
+                                        ? sortDirection
+                                        : false
+                                }
+                            >
                                 <TableSortLabel
                                     active={sortColumn === 'address'}
                                     direction={
@@ -205,7 +208,7 @@ const SchoolTable = () => {
                                             ? sortDirection
                                             : 'asc'
                                     }
-                                    onClick={() => sortSchools('address')}
+                                    onClick={() => handleSortRequest('address')}
                                 >
                                     Address
                                 </TableSortLabel>

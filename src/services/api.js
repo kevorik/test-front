@@ -3,31 +3,33 @@ import axios from 'axios'
 const API_URL = 'http://localhost:3000'
 
 //GET
-export const getSchools = (page, limit) => {
+export const getSchools = (page, limit, sortColumn, sortDirection) => {
     return axios.get(`${API_URL}/schools`, {
-        params: { page, limit },
+        params: { page, limit, sortColumn, sortDirection },
     })
 }
 
-export const getTeachers = (page, limit) => {
+export const getTeachers = (page, limit, sortColumn, sortDirection) => {
     return axios.get(`${API_URL}/teachers`, {
-        params: { page, limit },
+        params: { page, limit, sortColumn, sortDirection },
     })
 }
-export const getStudents = (page, limit) => {
+
+export const getStudents = (page, limit, sortColumn, sortDirection) => {
     return axios.get(`${API_URL}/students`, {
-        params: { page, limit },
+        params: { page, limit, sortColumn, sortDirection },
     })
 }
+
 export const getClasses = (page, limit) => {
     return axios.get(`${API_URL}/classes`, {
         params: { page, limit },
     })
 }
 
-export const getSubjects = (page, limit) => {
+export const getSubjects = (page, limit, sortColumn, sortDirection) => {
     return axios.get(`${API_URL}/subjects`, {
-        params: { page, limit },
+        params: { page, limit, sortColumn, sortDirection },
     })
 }
 

@@ -36,20 +36,20 @@ import {
 import PaginationComponent from './PaginationComponent'
 
 const TeacherTable = () => {
-    const [teachers, setTeachers] = useState([]) // Состояние для хранения списка учителей
-    const [subjects, setSubjects] = useState([]) // Состояние для хранения списка предметов
-    const [schools, setSchools] = useState([]) // Состояние для хранения списка школ
-    const [showCreateTeacherForm, setShowCreateTeacherForm] = useState(false) // Состояние для отображения формы создания учителя
-    const [showEditTeacherForm, setShowEditTeacherForm] = useState(false) // Состояние для отображения формы редактирования учителя
-    const [showSubjectDialog, setShowSubjectDialog] = useState(false) // Состояние для отображения диалога выбора предметов
-    const [selectedSubjects, setSelectedSubjects] = useState([]) // Состояние для хранения выбранных предметов
+    const [teachers, setTeachers] = useState([])
+    const [subjects, setSubjects] = useState([])
+    const [schools, setSchools] = useState([])
+    const [showCreateTeacherForm, setShowCreateTeacherForm] = useState(false)
+    const [showEditTeacherForm, setShowEditTeacherForm] = useState(false)
+    const [showSubjectDialog, setShowSubjectDialog] = useState(false)
+    const [selectedSubjects, setSelectedSubjects] = useState([])
     const [newTeacher, setNewTeacher] = useState({
         first_name: '',
         last_name: '',
         middle_name: '',
         subjects: [],
         schoolId: '',
-    }) // Состояние для хранения данных нового учителя
+    })
     const [editTeacher, setEditTeacher] = useState({
         id: '',
         first_name: '',
@@ -57,18 +57,17 @@ const TeacherTable = () => {
         middle_name: '',
         subjects: [],
         schoolId: '',
-    }) // Состояние для хранения данных редактируемого учителя
+    })
 
-    const [sortColumn, setSortColumn] = useState('id') // Состояние для хранения колонки, по которой выполняется сортировка
-    const [sortDirection, setSortDirection] = useState('asc') // Состояние для хранения направления сортировки
+    const [sortColumn, setSortColumn] = useState('id')
+    const [sortDirection, setSortDirection] = useState('asc')
 
-    const [total, setTotal] = useState(0) // Общее количество записей
-    const [page, setPage] = useState(1) // Текущая страница пагинации
-    const [limit] = useState(10) // Лимит записей на страницу
-    const [confirmOpen, setConfirmOpen] = useState(false) // Состояние для отображения подтверждения удаления
-    const [selectedTeacherId, setSelectedTeacherId] = useState(null) // Состояние для хранения ID выбранного для удаления учителя
+    const [total, setTotal] = useState(0)
+    const [page, setPage] = useState(1)
+    const [limit] = useState(10)
+    const [confirmOpen, setConfirmOpen] = useState(false)
+    const [selectedTeacherId, setSelectedTeacherId] = useState(null)
 
-    // Эффект для загрузки данных учителей, предметов и школ
     useEffect(() => {
         loadTeachers(page, limit, sortColumn, sortDirection)
         getSubjects().then((response) =>
@@ -87,7 +86,6 @@ const TeacherTable = () => {
         )
     }, [page, limit, sortColumn, sortDirection])
 
-    // Функция для загрузки учителей
     const loadTeachers = (page, limit, sortColumn, sortDirection) => {
         getTeachers(page, limit, sortColumn, sortDirection).then((response) => {
             setTeachers(
@@ -99,7 +97,6 @@ const TeacherTable = () => {
         })
     }
 
-    // Функция для создания нового учителя
     const handleCreateTeacher = async () => {
         try {
             const response = await createTeacher({
@@ -128,7 +125,6 @@ const TeacherTable = () => {
         }
     }
 
-    // Функция для редактирования учителя
     const handleEditTeacher = (teacher) => {
         setEditTeacher({
             id: teacher.id,
@@ -142,7 +138,6 @@ const TeacherTable = () => {
         setShowEditTeacherForm(true)
     }
 
-    // Функция для обновления данных учителя
     const handleUpdateTeacher = async () => {
         try {
             const updatedTeacher = {
@@ -171,7 +166,6 @@ const TeacherTable = () => {
         }
     }
 
-    // Функция для открытия диалога выбора предметов
     const handleSubjectDialogOpen = (forEdit = false) => {
         setSelectedSubjects(
             forEdit ? editTeacher.subjects : newTeacher.subjects
@@ -183,7 +177,6 @@ const TeacherTable = () => {
         setShowSubjectDialog(false)
     }
 
-    // Функция для переключения выбора предмета
     const handleSubjectToggle = (subjectId) => {
         setSelectedSubjects((prevSelectedSubjects) =>
             prevSelectedSubjects.includes(subjectId)
@@ -192,7 +185,6 @@ const TeacherTable = () => {
         )
     }
 
-    // Функция для подтверждения выбора предметов
     const handleSubjectDialogConfirm = () => {
         if (showEditTeacherForm) {
             setEditTeacher((prevEditTeacher) => ({
@@ -208,7 +200,6 @@ const TeacherTable = () => {
         setShowSubjectDialog(false)
     }
 
-    // Функция для удаления учителя
     const handleDeleteTeacher = (teacherId) => {
         setSelectedTeacherId(teacherId)
         setConfirmOpen(true)
@@ -225,18 +216,15 @@ const TeacherTable = () => {
         }
     }
 
-    // Обработка изменения страницы пагинации
     const handlePageChange = (event, value) => {
         setPage(value)
     }
 
-    // Валидация имени учителя (не должно содержать цифр)
     const validateName = (name) => {
         const regex = /^[^\d]*$/
         return regex.test(name)
     }
 
-    // Обработка изменения полей формы создания учителя
     const handleInputChange = (e, field) => {
         const { value } = e.target
         if (validateName(value)) {
@@ -244,7 +232,6 @@ const TeacherTable = () => {
         }
     }
 
-    // Обработка изменения полей формы редактирования учителя
     const handleEditInputChange = (e, field) => {
         const { value } = e.target
         if (validateName(value)) {
@@ -252,26 +239,46 @@ const TeacherTable = () => {
         }
     }
 
-    // Сортировка учителей
     const handleSortRequest = (column) => {
         const isAsc = sortColumn === column && sortDirection === 'asc'
         setSortDirection(isAsc ? 'desc' : 'asc')
         setSortColumn(column)
     }
-    // console.log('schools', schools)
-    // console.log('subjects', subjects)
-    // console.log('teach', teachers)
 
     return (
-        <div>
+        <Box p={3}>
             <Typography variant="h4" gutterBottom>
                 Teachers
             </Typography>
+            <Button
+                variant="contained"
+                color="primary"
+                onClick={() => setShowCreateTeacherForm(true)}
+                sx={{ mb: 2 }}
+            >
+                Add Teacher
+            </Button>
             <TableContainer component={Paper}>
                 <Table>
                     <TableHead>
                         <TableRow>
-                            <TableCell>ID</TableCell>
+                            <TableCell
+                                sortDirection={
+                                    sortColumn === 'id' ? sortDirection : false
+                                }
+                            >
+                                <TableSortLabel
+                                    active={sortColumn === 'id'}
+                                    direction={
+                                        sortColumn === 'id'
+                                            ? sortDirection
+                                            : 'asc'
+                                    }
+                                    onClick={() => handleSortRequest('id')}
+                                >
+                                    ID
+                                </TableSortLabel>
+                            </TableCell>
                             <TableCell
                                 sortDirection={
                                     sortColumn === 'first_name'
@@ -314,144 +321,92 @@ const TeacherTable = () => {
                                     Last Name
                                 </TableSortLabel>
                             </TableCell>
-                            <TableCell
-                                sortDirection={
-                                    sortColumn === 'middle_name'
-                                        ? sortDirection
-                                        : false
-                                }
-                            >
-                                <TableSortLabel
-                                    active={sortColumn === 'middle_name'}
-                                    direction={
-                                        sortColumn === 'middle_name'
-                                            ? sortDirection
-                                            : 'asc'
-                                    }
-                                    onClick={() =>
-                                        handleSortRequest('middle_name')
-                                    }
-                                >
-                                    Middle Name
-                                </TableSortLabel>
-                            </TableCell>
+                            <TableCell>Middle Name</TableCell>
                             <TableCell>Subjects</TableCell>
                             <TableCell>School</TableCell>
-                            <TableCell>Action</TableCell>
+                            <TableCell>Actions</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {Array.isArray(teachers) &&
-                            teachers.map((teacher) => (
-                                <TableRow key={teacher.id}>
-                                    <TableCell>{teacher.id}</TableCell>
-                                    <TableCell>{teacher.first_name}</TableCell>
-                                    <TableCell>{teacher.last_name}</TableCell>
-                                    <TableCell>{teacher.middle_name}</TableCell>
-                                    <TableCell>
-                                        {teacher.subjects &&
-                                        teacher.subjects.length > 0 ? (
-                                            <ul>
-                                                {teacher.subjects.map(
-                                                    (subject) => (
-                                                        <li key={subject.id}>
-                                                            {subject.name}
-                                                        </li>
-                                                    )
-                                                )}
-                                            </ul>
-                                        ) : (
-                                            'N/A'
-                                        )}
-                                    </TableCell>
-                                    <TableCell>
-                                        {teacher.school
-                                            ? teacher.school.name
-                                            : 'N/A'}
-                                    </TableCell>
-                                    <TableCell>
-                                        <Button
-                                            variant="contained"
-                                            color="secondary"
-                                            onClick={() =>
-                                                handleDeleteTeacher(teacher.id)
-                                            }
-                                            style={{ marginRight: '10px' }}
-                                        >
-                                            Delete
-                                        </Button>
-                                        <Button
-                                            variant="contained"
-                                            color="primary"
-                                            onClick={() =>
-                                                handleEditTeacher(teacher)
-                                            }
-                                        >
-                                            Edit
-                                        </Button>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
+                        {teachers.map((teacher) => (
+                            <TableRow key={teacher.id}>
+                                <TableCell>{teacher.id}</TableCell>
+                                <TableCell>{teacher.first_name}</TableCell>
+                                <TableCell>{teacher.last_name}</TableCell>
+                                <TableCell>{teacher.middle_name}</TableCell>
+                                <TableCell>
+                                    {teacher.subjects
+                                        .map((subject) => subject.name)
+                                        .join(', ')}
+                                </TableCell>
+                                <TableCell>
+                                    {teacher.school
+                                        ? teacher.school.name
+                                        : 'N/A'}
+                                </TableCell>
+                                <TableCell>
+                                    <Button
+                                        variant="contained"
+                                        color="primary"
+                                        onClick={() =>
+                                            handleEditTeacher(teacher)
+                                        }
+                                        sx={{ mr: 1 }}
+                                    >
+                                        Edit
+                                    </Button>
+                                    <Button
+                                        variant="contained"
+                                        color="secondary"
+                                        onClick={() =>
+                                            handleDeleteTeacher(teacher.id)
+                                        }
+                                    >
+                                        Delete
+                                    </Button>
+                                </TableCell>
+                            </TableRow>
+                        ))}
                     </TableBody>
                 </Table>
+                <PaginationComponent
+                    page={page}
+                    count={total}
+                    rowsPerPage={limit}
+                    onPageChange={handlePageChange}
+                />
             </TableContainer>
 
-            <PaginationComponent
-                totalItems={total}
-                itemsPerPage={limit}
-                currentPage={page}
-                onPageChange={handlePageChange}
-            />
-            <Box mt={2}>
-                <Button
-                    variant="contained"
-                    color="primary"
-                    onClick={() => setShowCreateTeacherForm(true)}
-                >
-                    Create Teacher
-                </Button>
-            </Box>
-            {showCreateTeacherForm && (
-                <Box mt={2}>
-                    <Typography variant="h6" gutterBottom>
-                        Create New Teacher
-                    </Typography>
+            <Dialog
+                open={showCreateTeacherForm}
+                onClose={() => setShowCreateTeacherForm(false)}
+            >
+                <DialogTitle>Add Teacher</DialogTitle>
+                <DialogContent>
                     <TextField
+                        margin="dense"
                         label="First Name"
+                        fullWidth
                         value={newTeacher.first_name}
                         onChange={(e) => handleInputChange(e, 'first_name')}
-                        fullWidth
-                        margin="normal"
-                        required={true}
-                        inputProps={{ maxLength: 20 }}
                     />
                     <TextField
+                        margin="dense"
                         label="Last Name"
+                        fullWidth
                         value={newTeacher.last_name}
                         onChange={(e) => handleInputChange(e, 'last_name')}
-                        fullWidth
-                        margin="normal"
-                        required={true}
-                        inputProps={{ maxLength: 20 }}
                     />
                     <TextField
+                        margin="dense"
                         label="Middle Name"
+                        fullWidth
                         value={newTeacher.middle_name}
                         onChange={(e) => handleInputChange(e, 'middle_name')}
-                        fullWidth
-                        margin="normal"
-                        inputProps={{ maxLength: 20 }}
                     />
-                    <Button
-                        variant="outlined"
-                        onClick={() => handleSubjectDialogOpen(false)}
-                    >
-                        Select Subjects
-                    </Button>
-                    <FormControl fullWidth margin="normal">
-                        <InputLabel id="schoolId-label">School</InputLabel>
+                    <FormControl fullWidth margin="dense">
+                        <InputLabel>School</InputLabel>
                         <Select
-                            labelId="schoolId-label"
                             value={newTeacher.schoolId}
                             onChange={(e) =>
                                 setNewTeacher({
@@ -467,46 +422,34 @@ const TeacherTable = () => {
                             ))}
                         </Select>
                     </FormControl>
-                    {newTeacher.subjects.length > 0 && (
-                        <Box mt={2}>
-                            <Typography variant="subtitle1">
-                                Selected Subjects:
-                            </Typography>
-                            <ul>
-                                {newTeacher.subjects.map((subjectId) => {
-                                    const subject = subjects.find(
-                                        (subject) => subject.id === subjectId
-                                    )
-                                    return (
-                                        <li key={subjectId}>
-                                            {subject
-                                                ? subject.name
-                                                : 'Unknown Subject'}
-                                        </li>
-                                    )
-                                })}
-                            </ul>
-                        </Box>
-                    )}
-                    <Box mt={2}>
-                        <Button
-                            variant="contained"
-                            color="primary"
-                            onClick={handleCreateTeacher}
-                        >
-                            Save
-                        </Button>
-                        <Button
-                            variant="contained"
-                            color="secondary"
-                            onClick={() => setShowCreateTeacherForm(false)}
-                            style={{ marginLeft: '10px' }}
-                        >
-                            Cancel
-                        </Button>
-                    </Box>
-                </Box>
-            )}
+                    <Button onClick={() => handleSubjectDialogOpen()}>
+                        Select Subjects
+                    </Button>
+                    <List>
+                        {newTeacher.subjects.map((subjectId) => {
+                            const subject = subjects.find(
+                                (s) => s.id === subjectId
+                            )
+                            return subject ? (
+                                <ListItem key={subject.id}>
+                                    {subject.name}
+                                </ListItem>
+                            ) : null
+                        })}
+                    </List>
+                </DialogContent>
+                <DialogActions>
+                    <Button
+                        onClick={() => setShowCreateTeacherForm(false)}
+                        color="secondary"
+                    >
+                        Cancel
+                    </Button>
+                    <Button onClick={handleCreateTeacher} color="primary">
+                        Add
+                    </Button>
+                </DialogActions>
+            </Dialog>
 
             <Dialog
                 open={showEditTeacherForm}
@@ -515,41 +458,31 @@ const TeacherTable = () => {
                 <DialogTitle>Edit Teacher</DialogTitle>
                 <DialogContent>
                     <TextField
+                        margin="dense"
                         label="First Name"
+                        fullWidth
                         value={editTeacher.first_name}
                         onChange={(e) => handleEditInputChange(e, 'first_name')}
-                        fullWidth
-                        margin="normal"
-                        inputProps={{ maxLength: 20 }}
                     />
                     <TextField
+                        margin="dense"
                         label="Last Name"
+                        fullWidth
                         value={editTeacher.last_name}
                         onChange={(e) => handleEditInputChange(e, 'last_name')}
-                        fullWidth
-                        margin="normal"
-                        inputProps={{ maxLength: 20 }}
                     />
                     <TextField
+                        margin="dense"
                         label="Middle Name"
+                        fullWidth
                         value={editTeacher.middle_name}
                         onChange={(e) =>
                             handleEditInputChange(e, 'middle_name')
                         }
-                        fullWidth
-                        margin="normal"
-                        inputProps={{ maxLength: 20 }}
                     />
-                    <Button
-                        variant="outlined"
-                        onClick={() => handleSubjectDialogOpen(true)}
-                    >
-                        Select Subjects
-                    </Button>
-                    <FormControl fullWidth margin="normal">
-                        <InputLabel id="schoolId-label">School</InputLabel>
+                    <FormControl fullWidth margin="dense">
+                        <InputLabel>School</InputLabel>
                         <Select
-                            labelId="schoolId-label"
                             value={editTeacher.schoolId}
                             onChange={(e) =>
                                 setEditTeacher({
@@ -565,27 +498,21 @@ const TeacherTable = () => {
                             ))}
                         </Select>
                     </FormControl>
-                    {editTeacher.subjects.length > 0 && (
-                        <Box mt={2}>
-                            <Typography variant="subtitle1">
-                                Selected Subjects:
-                            </Typography>
-                            <ul>
-                                {editTeacher.subjects.map((subjectId) => {
-                                    const subject = subjects.find(
-                                        (subject) => subject.id === subjectId
-                                    )
-                                    return (
-                                        <li key={subjectId}>
-                                            {subject
-                                                ? subject.name
-                                                : 'Unknown Subject'}
-                                        </li>
-                                    )
-                                })}
-                            </ul>
-                        </Box>
-                    )}
+                    <Button onClick={() => handleSubjectDialogOpen(true)}>
+                        Select Subjects
+                    </Button>
+                    <List>
+                        {editTeacher.subjects.map((subjectId) => {
+                            const subject = subjects.find(
+                                (s) => s.id === subjectId
+                            )
+                            return subject ? (
+                                <ListItem key={subject.id}>
+                                    {subject.name}
+                                </ListItem>
+                            ) : null
+                        })}
+                    </List>
                 </DialogContent>
                 <DialogActions>
                     <Button
@@ -595,10 +522,11 @@ const TeacherTable = () => {
                         Cancel
                     </Button>
                     <Button onClick={handleUpdateTeacher} color="primary">
-                        Save Changes
+                        Save
                     </Button>
                 </DialogActions>
             </Dialog>
+
             <Dialog open={showSubjectDialog} onClose={handleSubjectDialogClose}>
                 <DialogTitle>Select Subjects</DialogTitle>
                 <DialogContent>
@@ -606,6 +534,7 @@ const TeacherTable = () => {
                         {subjects.map((subject) => (
                             <ListItem
                                 key={subject.id}
+                                button
                                 onClick={() => handleSubjectToggle(subject.id)}
                             >
                                 <Checkbox
@@ -633,12 +562,11 @@ const TeacherTable = () => {
                     </Button>
                 </DialogActions>
             </Dialog>
+
             <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)}>
-                <DialogTitle>Confirm Delete</DialogTitle>
+                <DialogTitle>Confirm Deletion</DialogTitle>
                 <DialogContent>
-                    <Typography>
-                        Are you sure you want to delete this teacher?
-                    </Typography>
+                    Are you sure you want to delete this teacher?
                 </DialogContent>
                 <DialogActions>
                     <Button
@@ -652,7 +580,7 @@ const TeacherTable = () => {
                     </Button>
                 </DialogActions>
             </Dialog>
-        </div>
+        </Box>
     )
 }
 

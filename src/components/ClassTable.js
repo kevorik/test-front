@@ -43,16 +43,16 @@ const ClassTable = () => {
     const [editClassData, setEditClassData] = useState({
         id: '',
         name: '',
-        school: { id: '' },
-        classTeacher: { id: '' },
-        classPrefect: { id: '' },
+        schoolId: '',
+        classTeacherId: '',
+        classPrefectId: '',
     }) // Состояние для хранения данных редактируемого класса
 
     const [newClass, setNewClass] = useState({
         name: '',
-        school: { id: '' },
-        classTeacher: { id: '' },
-        classPrefect: { id: '' },
+        schoolId: '',
+        classTeacherId: '',
+        classPrefectId: '',
     }) // Состояние для хранения данных нового класса
 
     const [newClassErrors, setNewClassErrors] = useState({
@@ -130,14 +130,19 @@ const ClassTable = () => {
 
         if (Object.keys(errors).length > 0) return
         try {
-            await createClass(newClass)
+            await createClass({
+                name: newClass.name,
+                schoolId: newClass.schoolId,
+                classTeacherId: newClass.classTeacherId,
+                classPrefectId: newClass.classPrefectId,
+            })
             fetchClasses(page, limit)
             setShowCreateForm(false)
             setNewClass({
                 name: '',
-                school: { id: '' },
-                classTeacher: { id: '' },
-                classPrefect: { id: '' },
+                schoolId: '',
+                classTeacherId: '',
+                classPrefectId: '',
             })
         } catch (error) {
             console.error('Error creating class:', error)
@@ -169,7 +174,12 @@ const ClassTable = () => {
 
         if (Object.keys(errors).length > 0) return
         try {
-            await updateClass(editClassData.id, editClassData)
+            await updateClass(editClassData.id, {
+                name: editClassData.name,
+                schoolId: editClassData.schoolId,
+                classTeacherId: editClassData.classTeacherId,
+                classPrefectId: editClassData.classPrefectId,
+            })
             fetchClasses(page, limit)
             setShowEditModal(false)
         } catch (error) {
@@ -180,32 +190,10 @@ const ClassTable = () => {
     // Функция для обработки изменения полей формы
     const handleChange = (event) => {
         const { name, value } = event.target
-        let updatedValue = value
-
-        if (name === 'school') {
-            const selectedSchool = schools.find((school) => school.id === value)
-            updatedValue = { id: selectedSchool.id, name: selectedSchool.name }
-        } else if (name === 'classTeacher') {
-            const selectedTeacher = teachers.find(
-                (teacher) => teacher.id === value
-            )
-            updatedValue = {
-                id: selectedTeacher.id,
-                name: `${selectedTeacher.first_name} ${selectedTeacher.last_name}`,
-            }
-        } else if (name === 'classPrefect') {
-            const selectedPrefect = students.find(
-                (student) => student.id === value
-            )
-            updatedValue = {
-                id: selectedPrefect.id,
-                name: `${selectedPrefect.first_name} ${selectedPrefect.last_name}`,
-            }
-        }
 
         setEditClassData({
             ...editClassData,
-            [name]: updatedValue,
+            [name]: value,
         })
     }
 
@@ -214,15 +202,9 @@ const ClassTable = () => {
         setEditClassData({
             id: classItem.id,
             name: classItem.name,
-            school: { id: classItem.school.id, name: classItem.school.name },
-            classTeacher: {
-                id: classItem.classTeacher.id,
-                name: `${classItem.classTeacher.first_name} ${classItem.classTeacher.last_name}`,
-            },
-            classPrefect: {
-                id: classItem.classPrefect.id,
-                name: `${classItem.classPrefect.first_name} ${classItem.classPrefect.last_name}`,
-            },
+            schoolId: classItem.school.id,
+            classTeacherId: classItem.classTeacher.id,
+            classPrefectId: classItem.classPrefect.id,
         })
         setShowEditModal(true)
     }
@@ -363,11 +345,11 @@ const ClassTable = () => {
                         <InputLabel id="schoolId-label">School</InputLabel>
                         <Select
                             labelId="schoolId-label"
-                            value={newClass.school.id}
+                            value={newClass.schoolId}
                             onChange={(e) =>
                                 setNewClass({
                                     ...newClass,
-                                    school: { id: e.target.value },
+                                    schoolId: e.target.value,
                                 })
                             }
                         >
@@ -384,12 +366,11 @@ const ClassTable = () => {
                         </InputLabel>
                         <Select
                             labelId="classTeacherId-label"
-                            label="Class Teacher"
-                            value={newClass.classTeacher.id}
+                            value={newClass.classTeacherId}
                             onChange={(e) =>
                                 setNewClass({
                                     ...newClass,
-                                    classTeacher: { id: e.target.value },
+                                    classTeacherId: e.target.value,
                                 })
                             }
                         >
@@ -410,11 +391,11 @@ const ClassTable = () => {
                         </InputLabel>
                         <Select
                             labelId="classPrefectId-label"
-                            value={newClass.classPrefect.id}
+                            value={newClass.classPrefectId}
                             onChange={(e) =>
                                 setNewClass({
                                     ...newClass,
-                                    classPrefect: { id: e.target.value },
+                                    classPrefectId: e.target.value,
                                 })
                             }
                         >
@@ -480,8 +461,8 @@ const ClassTable = () => {
                     <FormControl fullWidth margin="normal">
                         <InputLabel>School ID</InputLabel>
                         <Select
-                            name="school"
-                            value={editClassData.school.id}
+                            name="schoolId"
+                            value={editClassData.schoolId}
                             onChange={handleChange}
                         >
                             {schools.map((school) => (
@@ -494,8 +475,8 @@ const ClassTable = () => {
                     <FormControl fullWidth margin="normal">
                         <InputLabel>Class Teacher ID</InputLabel>
                         <Select
-                            name="classTeacher"
-                            value={editClassData.classTeacher.id}
+                            name="classTeacherId"
+                            value={editClassData.classTeacherId}
                             onChange={handleChange}
                         >
                             {Array.isArray(teachers.teachers) &&
@@ -512,8 +493,8 @@ const ClassTable = () => {
                     <FormControl fullWidth margin="normal">
                         <InputLabel>Class Prefect ID</InputLabel>
                         <Select
-                            name="classPrefect"
-                            value={editClassData.classPrefect.id}
+                            name="classPrefectId"
+                            value={editClassData.classPrefectId}
                             onChange={handleChange}
                         >
                             {Array.isArray(students.students) &&

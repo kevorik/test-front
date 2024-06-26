@@ -39,15 +39,13 @@ const StudentTable = () => {
         first_name: '',
         last_name: '',
         middle_name: '',
-        class: { id: '' },
+        classId: '',
     })
     const [selectedStudent, setSelectedStudent] = useState(null)
     const [confirmOpen, setConfirmOpen] = useState(false)
     const [selectedStudentId, setSelectedStudentId] = useState(null)
-    const [sortColumn, setSortColumn] = useState(null)
-    const [sortDirection, setSortDirection] = useState('asc')
     const [page, setPage] = useState(1)
-    const [limit] = useState(5)
+    const [limit] = useState(10)
     const [total, setTotal] = useState(0)
     const [newStudentErrors, setNewStudentErrors] = useState({
         first_name: '',
@@ -58,14 +56,22 @@ const StudentTable = () => {
         last_name: '',
     })
 
-    useEffect(() => {
-        fetchStudents(page, limit)
-        fetchClasses()
-    }, [page])
+    const [sortColumn, setSortColumn] = useState('id')
+    const [sortDirection, setSortDirection] = useState('asc')
 
-    const fetchStudents = async (page, limit) => {
+    useEffect(() => {
+        fetchStudents(page, limit, sortColumn, sortDirection)
+        fetchClasses()
+    }, [page, limit, sortColumn, sortDirection])
+
+    const fetchStudents = async (page, limit, sortColumn, sortDirection) => {
         try {
-            const response = await getStudents(page, limit)
+            const response = await getStudents(
+                page,
+                limit,
+                sortColumn,
+                sortDirection
+            )
             const { students, total } = response.data
             setStudents(students || [])
             setTotal(total || 0)
@@ -104,17 +110,17 @@ const StudentTable = () => {
                 first_name: newStudent.first_name,
                 last_name: newStudent.last_name,
                 middle_name: newStudent.middle_name,
-                class: { id: newStudent.class.id },
+                classId: newStudent.classId,
             })
 
             if (response.status === 201) {
-                fetchStudents(page, limit)
+                fetchStudents(page, limit, sortColumn, sortDirection)
                 setShowCreateStudentForm(false)
                 setNewStudent({
                     first_name: '',
                     last_name: '',
                     middle_name: '',
-                    class: { id: '' },
+                    classId: '',
                 })
             }
         } catch (error) {
@@ -144,8 +150,8 @@ const StudentTable = () => {
         if (Object.keys(errors).length > 0) return
 
         try {
-            await updateStudent(selectedStudent.id, selectedStudent)
-            fetchStudents(page, limit)
+            await updateStudent(selectedStudent.id, selectedStudent) // Pass selectedStudent directly
+            fetchStudents(page, limit, sortColumn, sortDirection)
             setShowEditStudentForm(false)
             setSelectedStudent(null)
         } catch (error) {
@@ -173,29 +179,10 @@ const StudentTable = () => {
         }
     }
 
-    const sortStudents = (column) => {
+    const handleSortRequest = (column) => {
         const isAsc = sortColumn === column && sortDirection === 'asc'
-        const sortedStudents = [...students].sort((a, b) => {
-            if (
-                column === 'first_name' ||
-                column === 'last_name' ||
-                column === 'middle_name'
-            ) {
-                const valueA = a[column].toUpperCase()
-                const valueB = b[column].toUpperCase()
-                return (
-                    (valueA < valueB ? -1 : valueA > valueB ? 1 : 0) *
-                    (isAsc ? 1 : -1)
-                )
-            } else if (column === 'id') {
-                return (a[column] - b[column]) * (isAsc ? 1 : -1)
-            }
-            return 0
-        })
-
-        setStudents(sortedStudents)
-        setSortColumn(column)
         setSortDirection(isAsc ? 'desc' : 'asc')
+        setSortColumn(column)
     }
 
     const handleChangePage = (event, value) => {
@@ -233,7 +220,13 @@ const StudentTable = () => {
                     <TableHead>
                         <TableRow>
                             <TableCell>ID</TableCell>
-                            <TableCell>
+                            <TableCell
+                                sortDirection={
+                                    sortColumn === 'first_name'
+                                        ? sortDirection
+                                        : false
+                                }
+                            >
                                 <TableSortLabel
                                     active={sortColumn === 'first_name'}
                                     direction={
@@ -241,12 +234,20 @@ const StudentTable = () => {
                                             ? sortDirection
                                             : 'asc'
                                     }
-                                    onClick={() => sortStudents('first_name')}
+                                    onClick={() =>
+                                        handleSortRequest('first_name')
+                                    }
                                 >
                                     First Name
                                 </TableSortLabel>
                             </TableCell>
-                            <TableCell>
+                            <TableCell
+                                sortDirection={
+                                    sortColumn === 'last_name'
+                                        ? sortDirection
+                                        : false
+                                }
+                            >
                                 <TableSortLabel
                                     active={sortColumn === 'last_name'}
                                     direction={
@@ -254,12 +255,20 @@ const StudentTable = () => {
                                             ? sortDirection
                                             : 'asc'
                                     }
-                                    onClick={() => sortStudents('last_name')}
+                                    onClick={() =>
+                                        handleSortRequest('last_name')
+                                    }
                                 >
                                     Last Name
                                 </TableSortLabel>
                             </TableCell>
-                            <TableCell>
+                            <TableCell
+                                sortDirection={
+                                    sortColumn === 'middle_name'
+                                        ? sortDirection
+                                        : false
+                                }
+                            >
                                 <TableSortLabel
                                     active={sortColumn === 'middle_name'}
                                     direction={
@@ -267,7 +276,9 @@ const StudentTable = () => {
                                             ? sortDirection
                                             : 'asc'
                                     }
-                                    onClick={() => sortStudents('middle_name')}
+                                    onClick={() =>
+                                        handleSortRequest('middle_name')
+                                    }
                                 >
                                     Middle Name
                                 </TableSortLabel>
@@ -368,11 +379,11 @@ const StudentTable = () => {
                         <InputLabel id="classId-label">Class</InputLabel>
                         <Select
                             labelId="classId-label"
-                            value={newStudent.class.id}
+                            value={newStudent.classId}
                             onChange={(e) =>
                                 setNewStudent({
                                     ...newStudent,
-                                    class: { id: e.target.value },
+                                    classId: e.target.value,
                                 })
                             }
                         >
@@ -456,11 +467,11 @@ const StudentTable = () => {
                             </InputLabel>
                             <Select
                                 labelId="editClassId-label"
-                                value={selectedStudent.class.id}
+                                value={selectedStudent.classId}
                                 onChange={(e) =>
                                     setSelectedStudent({
                                         ...selectedStudent,
-                                        class: { id: e.target.value },
+                                        classId: e.target.value,
                                     })
                                 }
                             >

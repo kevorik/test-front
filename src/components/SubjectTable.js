@@ -21,6 +21,7 @@ import {
     DialogActions,
     DialogContent,
     DialogTitle,
+    TableSortLabel,
 } from '@mui/material'
 import PaginationComponent from './PaginationComponent'
 
@@ -35,16 +36,24 @@ const SubjectTable = () => {
     const [selectedSubjectId, setSelectedSubjectId] = useState(null) // Состояние для хранения ID выбранного для удаления предмета
     const [total, setTotal] = useState(0) // Общее количество записей
     const [page, setPage] = useState(1) // Текущая страница пагинации
-    const [limit] = useState(10) // Лимит записей на страницу
+    const [limit] = useState(5) // Лимит записей на страницу
+
+    const [sortColumn, setSortColumn] = useState('id')
+    const [sortDirection, setSortDirection] = useState('asc')
 
     useEffect(() => {
-        fetchSubjects(page, limit) // Загрузка предметов при изменении страницы или лимита
-    }, [page])
+        fetchSubjects(page, limit, sortColumn, sortDirection) // Загрузка предметов при изменении страницы или лимита
+    }, [page, limit, sortColumn, sortDirection])
 
     // Функция для получения списка предметов
-    const fetchSubjects = async () => {
+    const fetchSubjects = async (page, limit, sortColumn, sortDirection) => {
         try {
-            const response = await getSubjects(page, limit)
+            const response = await getSubjects(
+                page,
+                limit,
+                sortColumn,
+                sortDirection
+            )
             const { subjects, total } = response.data
             setSubjects(subjects || [])
             setTotal(total || 0)
@@ -56,18 +65,20 @@ const SubjectTable = () => {
     // Функция для создания нового предмета
     const handleCreateSubject = async () => {
         if (!validateName(newSubject.name)) {
-            setError('Subject name should not contain numbers.')
+            setError('Subject name should not contain numbers !!!!!!!!!!!!!.')
             return
         }
 
         if (subjects.some((subject) => subject.name === newSubject.name)) {
-            setError('Subject with this name already exists.')
+            setError(
+                'Subject with this name already exists !!!!!!!!!!!!!!!!!!!!.'
+            )
             return
         }
 
         try {
             await createSubject(newSubject)
-            fetchSubjects(page, limit)
+            fetchSubjects(page, limit, sortColumn, sortDirection)
             setShowCreateForm(false)
             setNewSubject({ name: '' })
             setError('')
@@ -86,7 +97,9 @@ const SubjectTable = () => {
     // Функция для обновления данных предмета
     const handleUpdateSubject = async () => {
         if (!validateName(selectedSubject.name)) {
-            setError('Subject name should not contain numbers.')
+            setError(
+                'Subject name should not contain numbers!!!!!!!!!!!!!!!!!.'
+            )
             return
         }
 
@@ -97,7 +110,9 @@ const SubjectTable = () => {
                     subject.id !== selectedSubject.id
             )
         ) {
-            setError('Subject with this name already exists.')
+            setError(
+                'Subject with this name already exists !!!!!!!!!!!!!!!!!!!!!!.'
+            )
             return
         }
 
@@ -152,7 +167,7 @@ const SubjectTable = () => {
             setNewSubject({ ...newSubject, name: value })
             setError('')
         } else {
-            setError('Subject name should not contain numbers.')
+            setError('Subject name should not contain numbers!!!!!!!.')
         }
     }
 
@@ -163,8 +178,15 @@ const SubjectTable = () => {
             setSelectedSubject({ ...selectedSubject, name: value })
             setError('')
         } else {
-            setError('Subject name should not contain numbers.')
+            setError('Subject name should not contain numbers!!!!!!!.')
         }
+    }
+
+    // Сортировка учителей
+    const handleSortRequest = (column) => {
+        const isAsc = sortColumn === column && sortDirection === 'asc'
+        setSortDirection(isAsc ? 'desc' : 'asc')
+        setSortColumn(column)
     }
 
     return (
@@ -177,7 +199,25 @@ const SubjectTable = () => {
                     <TableHead>
                         <TableRow>
                             <TableCell>ID</TableCell>
-                            <TableCell>Name</TableCell>
+                            <TableCell
+                                sortDirection={
+                                    sortColumn === 'name'
+                                        ? sortDirection
+                                        : false
+                                }
+                            >
+                                <TableSortLabel
+                                    active={sortColumn === 'name'}
+                                    direction={
+                                        sortColumn === 'name'
+                                            ? sortDirection
+                                            : 'asc'
+                                    }
+                                    onClick={() => handleSortRequest('name')}
+                                >
+                                    Name
+                                </TableSortLabel>
+                            </TableCell>
                             <TableCell>Action</TableCell>
                         </TableRow>
                     </TableHead>
