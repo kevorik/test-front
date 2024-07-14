@@ -1,4 +1,4 @@
-import * as React from 'react'
+import React from 'react'
 import {
     List,
     ListItem,
@@ -8,20 +8,46 @@ import {
     Toolbar,
     AppBar,
     Typography,
+    Button,
 } from '@mui/material'
-import { Link } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { logout } from '../services/api'
 
 const drawerWidth = 240
 
 export default function Sidebar() {
+    const location = useLocation()
+    const navigate = useNavigate()
+
+    const menuItems = [
+        { text: 'Schools', path: '/schools' },
+        { text: 'Classes', path: '/classes' },
+        { text: 'Students', path: '/students' },
+        { text: 'Subjects', path: '/subjects' },
+        { text: 'Teachers', path: '/teachers' },
+    ]
+
+    const handleLogout = async () => {
+        try {
+            await logout()
+            localStorage.removeItem('token')
+            navigate('/login')
+        } catch (err) {
+            console.error('Error during logout:', err)
+        }
+    }
+
     return (
         <div style={{ display: 'flex' }}>
             <CssBaseline />
             <AppBar position="fixed" style={{ zIndex: 1201 }}>
-                <Toolbar>
+                <Toolbar style={{ justifyContent: 'space-between' }}>
                     <Typography variant="h6" noWrap>
                         CRM Dashboard
                     </Typography>
+                    <Button color="inherit" onClick={handleLogout}>
+                        Logout
+                    </Button>
                 </Toolbar>
             </AppBar>
             <Drawer
@@ -32,21 +58,17 @@ export default function Sidebar() {
                 <Toolbar />
                 <div style={{ overflow: 'auto' }}>
                     <List>
-                        <ListItem button component={Link} to="/schools">
-                            <ListItemText primary="Schools" />
-                        </ListItem>
-                        <ListItem button component={Link} to="/classes">
-                            <ListItemText primary="Classes" />
-                        </ListItem>
-                        <ListItem button component={Link} to="/students">
-                            <ListItemText primary="Students" />
-                        </ListItem>
-                        <ListItem button component={Link} to="/subjects">
-                            <ListItemText primary="Subjects" />
-                        </ListItem>
-                        <ListItem button component={Link} to="/teachers">
-                            <ListItemText primary="Teachers" />
-                        </ListItem>
+                        {menuItems.map((item) => (
+                            <ListItem
+                                button
+                                component={Link}
+                                to={item.path}
+                                key={item.text}
+                                selected={location.pathname === item.path}
+                            >
+                                <ListItemText primary={item.text} />
+                            </ListItem>
+                        ))}
                     </List>
                 </div>
             </Drawer>

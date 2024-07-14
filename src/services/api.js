@@ -33,6 +33,10 @@ export const getSubjects = (page, limit, sortColumn, sortDirection) => {
     })
 }
 
+export const getLevels = () => {
+    return axios.get(`${API_URL}/levels`)
+}
+
 //POST
 export const createSchool = (school) => axios.post(`${API_URL}/schools`, school)
 export const createTeacher = (teacher) =>
@@ -80,4 +84,18 @@ export const updateSubject = (subjectId, updatedSubject) => {
 export const updateTeacher = (teacherId, updatedTeacher) => {
     const { id, ...data } = updatedTeacher
     return axios.put(`${API_URL}/teachers/${teacherId}`, data)
+}
+
+//AUTH
+
+export const login = async (email, password) => {
+    return axios.post(`${API_URL}/auth/login`, { email, password })
+}
+
+export const register = async (email, password, name) => {
+    return axios.post(`${API_URL}/auth/register`, { email, password, name })
+}
+
+export const logout = () => {
+    return axios.post(`${API_URL}/auth/logout`, { withCredentials: true })
 }

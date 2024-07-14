@@ -22,14 +22,22 @@ import {
     DialogContent,
     DialogTitle,
     TableSortLabel,
+    FormControlLabel,
+    Checkbox,
 } from '@mui/material'
 import PaginationComponent from './PaginationComponent'
+import { DatePicker } from '@mui/x-date-pickers'
+// import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'
 
 const SubjectTable = () => {
     const [subjects, setSubjects] = useState([]) // Состояние для хранения списка предметов
     const [showCreateForm, setShowCreateForm] = useState(false) // Состояние для отображения формы создания предмета
     const [showEditForm, setShowEditForm] = useState(false) // Состояние для отображения формы редактирования предмета
-    const [newSubject, setNewSubject] = useState({ name: '' }) // Состояние для хранения данных нового предмета
+    const [newSubject, setNewSubject] = useState({
+        name: '',
+        isActive: false,
+        foundedDate: null,
+    }) // Состояние для хранения данных нового предмета
     const [selectedSubject, setSelectedSubject] = useState(null) // Состояние для хранения выбранного для редактирования предмета
     const [error, setError] = useState('') // Состояние для хранения сообщений об ошибках
     const [confirmOpen, setConfirmOpen] = useState(false) // Состояние для отображения подтверждения удаления
@@ -65,14 +73,12 @@ const SubjectTable = () => {
     // Функция для создания нового предмета
     const handleCreateSubject = async () => {
         if (!validateName(newSubject.name)) {
-            setError('Subject name should not contain numbers !!!!!!!!!!!!!.')
+            setError('Subject name should not contain numbers.')
             return
         }
 
         if (subjects.some((subject) => subject.name === newSubject.name)) {
-            setError(
-                'Subject with this name already exists !!!!!!!!!!!!!!!!!!!!.'
-            )
+            setError('Subject with this name already exists.')
             return
         }
 
@@ -80,7 +86,7 @@ const SubjectTable = () => {
             await createSubject(newSubject)
             fetchSubjects(page, limit, sortColumn, sortDirection)
             setShowCreateForm(false)
-            setNewSubject({ name: '' })
+            setNewSubject({ name: '', isActive: false, foundedDate: null })
             setError('')
         } catch (error) {
             setError('Error creating subject.')
@@ -97,9 +103,7 @@ const SubjectTable = () => {
     // Функция для обновления данных предмета
     const handleUpdateSubject = async () => {
         if (!validateName(selectedSubject.name)) {
-            setError(
-                'Subject name should not contain numbers!!!!!!!!!!!!!!!!!.'
-            )
+            setError('Subject name should not contain numbers.')
             return
         }
 
@@ -110,9 +114,7 @@ const SubjectTable = () => {
                     subject.id !== selectedSubject.id
             )
         ) {
-            setError(
-                'Subject with this name already exists !!!!!!!!!!!!!!!!!!!!!!.'
-            )
+            setError('Subject with this name already exists.')
             return
         }
 
@@ -162,27 +164,37 @@ const SubjectTable = () => {
 
     // Обработка изменения полей формы создания предмета
     const handleInputChange = (e) => {
-        const { value } = e.target
-        if (validateName(value)) {
-            setNewSubject({ ...newSubject, name: value })
+        const { name, value, checked, type } = e.target
+        const updatedValue = type === 'checkbox' ? checked : value
+        if (validateName(updatedValue) || name === 'isActive') {
+            setNewSubject({ ...newSubject, [name]: updatedValue })
             setError('')
         } else {
-            setError('Subject name should not contain numbers!!!!!!!.')
+            setError('Subject name should not contain numbers.')
         }
     }
 
     // Обработка изменения полей формы редактирования предмета
     const handleEditInputChange = (e) => {
-        const { value } = e.target
-        if (validateName(value)) {
-            setSelectedSubject({ ...selectedSubject, name: value })
+        const { name, value, checked, type } = e.target
+        const updatedValue = type === 'checkbox' ? checked : value
+        if (validateName(updatedValue) || name === 'isActive') {
+            setSelectedSubject({ ...selectedSubject, [name]: updatedValue })
             setError('')
         } else {
-            setError('Subject name should not contain numbers!!!!!!!.')
+            setError('Subject name should not contain numbers.')
         }
     }
 
-    // Сортировка учителей
+    const handleDateChange = (date) => {
+        setNewSubject({ ...newSubject, foundedDate: date })
+    }
+
+    const handleEditDateChange = (date) => {
+        setSelectedSubject({ ...selectedSubject, foundedDate: date })
+    }
+
+    // Сортировка предметов
     const handleSortRequest = (column) => {
         const isAsc = sortColumn === column && sortDirection === 'asc'
         setSortDirection(isAsc ? 'desc' : 'asc')
@@ -218,6 +230,8 @@ const SubjectTable = () => {
                                     Name
                                 </TableSortLabel>
                             </TableCell>
+                            <TableCell>isActive</TableCell>
+                            <TableCell>Founded Date</TableCell>
                             <TableCell>Action</TableCell>
                         </TableRow>
                     </TableHead>
@@ -226,6 +240,16 @@ const SubjectTable = () => {
                             <TableRow key={subject.id}>
                                 <TableCell>{subject.id}</TableCell>
                                 <TableCell>{subject.name}</TableCell>
+                                <TableCell>
+                                    {subject.isActive ? 'Yes' : 'No'}
+                                </TableCell>
+                                <TableCell>
+                                    {subject.foundedDate
+                                        ? new Date(
+                                              subject.foundedDate
+                                          ).toLocaleDateString()
+                                        : ''}
+                                </TableCell>
                                 <TableCell>
                                     <Button
                                         variant="contained"
@@ -267,75 +291,114 @@ const SubjectTable = () => {
                     Create Subject
                 </Button>
             </Box>
-            {showCreateForm && (
-                <Box mt={2}>
-                    <Typography variant="h6" gutterBottom>
-                        Create New Subject
-                    </Typography>
+
+            {/* Форма создания предмета */}
+            <Dialog
+                open={showCreateForm}
+                onClose={() => setShowCreateForm(false)}
+            >
+                <DialogTitle>Create New Subject</DialogTitle>
+                <DialogContent>
                     <TextField
+                        autoFocus
+                        margin="dense"
                         label="Name"
+                        type="text"
+                        fullWidth
+                        name="name"
                         value={newSubject.name}
                         onChange={handleInputChange}
-                        fullWidth
-                        margin="normal"
-                        required={true}
-                        inputProps={{ maxLength: 30 }}
-                        error={!!error}
-                        helperText={error}
+                        error={error && !validateName(newSubject.name)}
+                        helperText={
+                            error &&
+                            !validateName(newSubject.name) &&
+                            'Subject name should not contain numbers.'
+                        }
                     />
-                    <Box mt={2}>
-                        <Button
-                            variant="contained"
-                            color="primary"
-                            onClick={handleCreateSubject}
-                        >
-                            Save
-                        </Button>
-                        <Button
-                            variant="contained"
-                            color="secondary"
-                            onClick={() => setShowCreateForm(false)}
-                            style={{ marginLeft: '10px' }}
-                        >
-                            Cancel
-                        </Button>
-                    </Box>
-                </Box>
-            )}
+                    <FormControlLabel
+                        control={
+                            <Checkbox
+                                checked={newSubject.isActive}
+                                onChange={handleInputChange}
+                                name="isActive"
+                                color="primary"
+                            />
+                        }
+                        label="isActive"
+                    />
 
-            {showEditForm && selectedSubject && (
-                <Dialog
-                    open={showEditForm}
-                    onClose={() => setShowEditForm(false)}
-                >
-                    <DialogTitle>Edit Subject</DialogTitle>
-                    <DialogContent>
-                        <TextField
-                            label="Name"
-                            value={selectedSubject.name}
-                            onChange={handleEditInputChange}
-                            fullWidth
-                            margin="normal"
-                            required={true}
-                            inputProps={{ maxLength: 30 }}
-                            error={!!error}
-                            helperText={error}
-                        />
-                    </DialogContent>
-                    <DialogActions>
-                        <Button
-                            onClick={() => setShowEditForm(false)}
-                            color="secondary"
-                        >
-                            Cancel
-                        </Button>
-                        <Button onClick={handleUpdateSubject} color="primary">
-                            Save
-                        </Button>
-                    </DialogActions>
-                </Dialog>
-            )}
+                    <DatePicker
+                        label="Founded Date"
+                        value={newSubject.foundedDate}
+                        onChange={(date) => handleDateChange(date)}
+                        renderInput={(params) => <TextField {...params} />}
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setShowCreateForm(false)}>
+                        Cancel
+                    </Button>
+                    <Button onClick={handleCreateSubject} color="primary">
+                        Create
+                    </Button>
+                </DialogActions>
+            </Dialog>
 
+            <Dialog open={showEditForm} onClose={() => setShowEditForm(false)}>
+                <DialogTitle>Edit Subject</DialogTitle>
+                <DialogContent>
+                    <TextField
+                        autoFocus
+                        margin="dense"
+                        label="Name"
+                        type="text"
+                        fullWidth
+                        name="name"
+                        value={selectedSubject ? selectedSubject.name : ''}
+                        onChange={handleEditInputChange}
+                        error={error && !validateName(selectedSubject.name)}
+                        helperText={
+                            error &&
+                            !validateName(selectedSubject.name) &&
+                            'Subject name should not contain numbers.'
+                        }
+                    />
+                    <FormControlLabel
+                        control={
+                            <Checkbox
+                                checked={
+                                    selectedSubject
+                                        ? selectedSubject.isActive
+                                        : false
+                                }
+                                onChange={handleEditInputChange}
+                                name="isActive"
+                                color="primary"
+                            />
+                        }
+                        label="isActive"
+                    />
+
+                    <DatePicker
+                        label="Founded Date"
+                        value={
+                            selectedSubject ? selectedSubject.foundedDate : null
+                        }
+                        onChange={(date) => handleEditDateChange(date)}
+                        renderInput={(params) => <TextField {...params} />}
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setShowEditForm(false)}>
+                        Cancel
+                    </Button>
+                    <Button onClick={handleUpdateSubject} color="primary">
+                        Update
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Подтверждение удаления */}
             <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)}>
                 <DialogTitle>Confirm Delete</DialogTitle>
                 <DialogContent>
@@ -344,14 +407,11 @@ const SubjectTable = () => {
                     </Typography>
                 </DialogContent>
                 <DialogActions>
-                    <Button
-                        onClick={() => setConfirmOpen(false)}
-                        color="secondary"
-                    >
+                    <Button onClick={() => setConfirmOpen(false)}>
                         Cancel
                     </Button>
-                    <Button onClick={confirmDeleteSubject} color="primary">
-                        Confirm
+                    <Button onClick={confirmDeleteSubject} color="secondary">
+                        Delete
                     </Button>
                 </DialogActions>
             </Dialog>
