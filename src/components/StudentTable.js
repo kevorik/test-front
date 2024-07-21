@@ -212,9 +212,7 @@ const StudentTable = () => {
 
     return (
         <div>
-            <Typography variant="h4" gutterBottom>
-                Students
-            </Typography>
+            <Typography variant="h4" gutterBottom></Typography>
             <TableContainer component={Paper}>
                 <Table>
                     <TableHead>

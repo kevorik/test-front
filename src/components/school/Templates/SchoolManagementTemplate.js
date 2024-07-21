@@ -183,9 +183,7 @@ const SchoolManagementTemplate = () => {
 
     return (
         <div>
-            <Heading variant="h4" gutterBottom>
-                Schools
-            </Heading>
+            <Heading variant="h4" gutterBottom></Heading>
             <SchoolTable
                 schools={schools}
                 sortColumn={sortColumn}

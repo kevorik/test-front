@@ -203,9 +203,7 @@ const SubjectTable = () => {
 
     return (
         <div>
-            <Typography variant="h4" gutterBottom>
-                Subjects
-            </Typography>
+            <Typography variant="h4" gutterBottom></Typography>
             <TableContainer component={Paper}>
                 <Table>
                     <TableHead>

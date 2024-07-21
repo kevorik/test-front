@@ -75,6 +75,7 @@ const SchoolForm = ({ school, errors, onChange, onSave, onCancel }) => {
                     value={school.foundedDate || ''}
                     onChange={handleDateChange}
                     fullWidth
+                    style={{ width: '10%' }}
                 />
             </Box>
             <FormControl component="fieldset" fullWidth margin="normal">
