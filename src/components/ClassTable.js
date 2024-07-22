@@ -30,6 +30,8 @@ import {
     DialogContent,
     DialogContentText,
     DialogTitle,
+    Checkbox,
+    ListItemText,
 } from '@mui/material'
 import PaginationComponent from './PaginationComponent'
 
@@ -70,6 +72,8 @@ const ClassTable = () => {
     const [page, setPage] = useState(1) // Текущая страница
     const [limit] = useState(5) // Лимит записей на страницу
     const [total, setTotal] = useState(0) // Общее количество записей
+    const [selectedStudents, setSelectedStudents] = useState([]) // для создания класса
+    const [editSelectedStudents, setEditSelectedStudents] = useState([])
 
     useEffect(() => {
         fetchClasses(page, limit)
@@ -135,6 +139,7 @@ const ClassTable = () => {
                 schoolId: newClass.schoolId,
                 classTeacherId: newClass.classTeacherId,
                 classPrefectId: newClass.classPrefectId,
+                studentIds: selectedStudents,
             })
             fetchClasses(page, limit)
             setShowCreateForm(false)
@@ -144,6 +149,7 @@ const ClassTable = () => {
                 classTeacherId: '',
                 classPrefectId: '',
             })
+            setSelectedStudents([])
         } catch (error) {
             console.error('Error creating class:', error)
         }
@@ -179,6 +185,7 @@ const ClassTable = () => {
                 schoolId: editClassData.schoolId,
                 classTeacherId: editClassData.classTeacherId,
                 classPrefectId: editClassData.classPrefectId,
+                studentIds: editSelectedStudents,
             })
             fetchClasses(page, limit)
             setShowEditModal(false)
@@ -206,6 +213,7 @@ const ClassTable = () => {
             classTeacherId: classItem.classTeacher.id,
             classPrefectId: classItem.classPrefect.id,
         })
+        setEditSelectedStudents(classItem.students.map((student) => student.id)) // устанавливаем выбранных студентов
         setShowEditModal(true)
     }
 
@@ -226,6 +234,14 @@ const ClassTable = () => {
         if (e.target.value.trim() !== '') {
             setEditClassErrors({ ...editClassErrors, [field]: '' })
         }
+    }
+
+    const handleStudentsChange = (event) => {
+        setSelectedStudents(event.target.value)
+    }
+
+    const handleEditStudentsChange = (event) => {
+        setEditSelectedStudents(event.target.value)
     }
 
     return (
@@ -408,6 +424,42 @@ const ClassTable = () => {
                                 ))}
                         </Select>
                     </FormControl>
+                    <FormControl fullWidth margin="normal">
+                        <InputLabel id="students-label">Students</InputLabel>
+                        <Select
+                            labelId="students-label"
+                            multiple
+                            value={selectedStudents}
+                            onChange={handleStudentsChange}
+                            renderValue={(selected) =>
+                                selected
+                                    .map((id) => {
+                                        const student = students.find(
+                                            (s) => s.id === id
+                                        )
+                                        return student
+                                            ? `${student.first_name} ${student.last_name}`
+                                            : ''
+                                    })
+                                    .join(', ')
+                            }
+                        >
+                            {students.map((student) => (
+                                <MenuItem key={student.id} value={student.id}>
+                                    <Checkbox
+                                        checked={
+                                            selectedStudents.indexOf(
+                                                student.id
+                                            ) > -1
+                                        }
+                                    />
+                                    <ListItemText
+                                        primary={`${student.first_name} ${student.last_name}`}
+                                    />
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
                     <Box mt={2}>
                         <Button
                             variant="contained"
@@ -506,6 +558,44 @@ const ClassTable = () => {
                                 ))}
                         </Select>
                     </FormControl>
+                    <FormControl fullWidth margin="normal">
+                        <InputLabel id="edit-students-label">
+                            Students
+                        </InputLabel>
+                        <Select
+                            labelId="edit-students-label"
+                            multiple
+                            value={editSelectedStudents}
+                            onChange={handleEditStudentsChange}
+                            renderValue={(selected) =>
+                                selected
+                                    .map((id) => {
+                                        const student = students.find(
+                                            (s) => s.id === id
+                                        )
+                                        return student
+                                            ? `${student.first_name} ${student.last_name}`
+                                            : ''
+                                    })
+                                    .join(', ')
+                            }
+                        >
+                            {students.map((student) => (
+                                <MenuItem key={student.id} value={student.id}>
+                                    <Checkbox
+                                        checked={
+                                            editSelectedStudents.indexOf(
+                                                student.id
+                                            ) > -1
+                                        }
+                                    />
+                                    <ListItemText
+                                        primary={`${student.first_name} ${student.last_name}`}
+                                    />
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
                     <Box mt={2}>
                         <Button
                             variant="contained"
@@ -550,3 +640,4 @@ const ClassTable = () => {
 }
 
 export default ClassTable
+//a
